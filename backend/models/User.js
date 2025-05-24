@@ -8,17 +8,25 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true,
     },
+    email: { // <-- Asegúrate de que este bloque sea idéntico
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+        match: [/.+@.+\..+/, 'Por favor, introduce un email válido']
+    },
     password: {
         type: String,
         required: true,
     },
-    role: { // <-- NUEVO CAMPO PARA EL ROL
+    role: {
         type: String,
-        enum: ['user', 'employee', 'admin'], // Roles permitidos
-        default: 'user', // Rol por defecto al registrarse
+        enum: ['user', 'employee', 'admin'],
+        default: 'user',
     },
 }, {
-    timestamps: true // Esto añade campos `createdAt` y `updatedAt` automáticamente
+    timestamps: true
 });
 
 // Middleware para encriptar la contraseña antes de guardar
