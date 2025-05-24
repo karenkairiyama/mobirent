@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-// Importa el CSS aquí si lo tienes separado o asegúrate de que App.css lo incluye
-// import '../App.css'; // Si App.css tiene tus estilos generales
+// import '../App.css'; // Asegúrate de que tus estilos estén importados
 
 function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState(''); // 'success' o 'error'
+    const [messageType, setMessageType] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => { // ¡Importante: usa 'async' aquí!
         e.preventDefault();
         setMessage(''); // Limpiar mensajes anteriores
+        setMessageType('');
 
         if (!username || !password) {
             setMessage('Por favor, introduce usuario y contraseña.');
@@ -18,20 +18,37 @@ function Login() {
             return;
         }
 
-        // Aquí simularemos la llamada al backend.
-        // En el futuro, esto será una llamada a fetch o axios.
-        console.log('Intentando iniciar sesión con:', { username, password });
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            });
 
-        // Simulación de una respuesta del backend
-        if (username === 'test' && password === 'password') {
-            setMessage('Inicio de sesión exitoso. Redirigiendo...');
-            setMessageType('success');
-            // En una app real, guardarías el token y redirigirías
-            setTimeout(() => {
-                window.location.href = '/home'; // Usaremos React Router en el futuro
-            }, 1000);
-        } else {
-            setMessage('Credenciales inválidas. Inténtalo de nuevo.');
+            const data = await response.json(); // Parsea la respuesta JSON
+
+            if (response.ok) {
+                // Si el login es exitoso, guarda el token, usuario y AHORA EL ROL en el localStorage
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('userRole', data.role); // <-- ¡NUEVO! Guardar el rol
+                setMessage(data.message || 'Inicio de sesión exitoso. Redirigiendo...');
+                setMessageType('success');
+                // Opcional: limpiar campos
+                setUsername('');
+                setPassword('');
+                setTimeout(() => {
+                    window.location.href = '/home'; // Redirige a la página principal
+                }, 1000);
+            } else {
+                setMessage(data.message || 'Error en el inicio de sesión.');
+                setMessageType('error');
+            }
+        } catch (error) {
+            console.error('Error al iniciar sesión:', error);
+            setMessage('Ocurrió un error de red o de servidor.');
             setMessageType('error');
         }
     };
@@ -64,7 +81,7 @@ function Login() {
                 </div>
                 <button type="submit">Entrar</button>
             </form>
-            <p>¿No tienes una cuenta? <a href="/register">Regístrate aquí</a></p> {/* Usaremos React Router */}
+            <p>¿No tienes una cuenta? <a href="/register">Regístrate aquí</a></p>
             {message && <p className={`message ${messageType}`}>{message}</p>}
         </div>
     );

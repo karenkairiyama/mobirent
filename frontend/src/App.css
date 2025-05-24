@@ -99,3 +99,39 @@ p a:hover {
 .read-the-docs {
   color: #888;
 }
+/* ... tu CSS existente ... */
+
+.button-group {
+    margin-top: 25px;
+    display: flex;
+    gap: 15px; /* Espacio entre los botones */
+    justify-content: center;
+    flex-wrap: wrap; /* Para que los botones se envuelvan en pantallas pequeñas */
+}
+
+.button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    text-decoration: none; /* Quitar el subrayado de los enlaces */
+    display: inline-block; /* Para que se comporten como botones */
+    min-width: 120px; /* Ancho mínimo para consistencia */
+    text-align: center;
+    transition: background-color 0.3s ease; /* Transición suave al pasar el mouse */
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+.button.secondary {
+    background-color: #6c757d; /* Un color gris para el botón secundario */
+}
+
+.button.secondary:hover {
+    background-color: #5a6268;
+}

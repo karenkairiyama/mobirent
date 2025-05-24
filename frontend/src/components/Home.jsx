@@ -1,32 +1,31 @@
 import React, { useEffect, useState } from 'react';
-// import '../App.css'; // Si App.css tiene tus estilos generales
+import { useNavigate } from 'react-router-dom';
 
 function Home() {
-    const [username, setUsername] = useState('Usuario'); // Valor por defecto
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [username, setUsername] = useState('Usuario');
+    const navigate = useNavigate();
 
     useEffect(() => {
-        // En una aplicación real, aquí verificarías un token de autenticación
-        // guardado en localStorage o cookies.
-        const storedUsername = localStorage.getItem('username'); // Simulación
-        if (storedUsername) {
+        const storedUsername = localStorage.getItem('username');
+        const token = localStorage.getItem('token');
+
+        if (storedUsername && token) {
             setUsername(storedUsername);
-            setIsLoggedIn(true);
         } else {
             // Si no hay sesión, redirige a login
-            window.location.href = '/login'; // Usaremos React Router en el futuro
+            navigate('/login');
         }
-    }, []);
+    }, [navigate]);
 
     const handleLogout = () => {
-        localStorage.removeItem('username'); // Simulación
-        // En una app real, también eliminarías el token de autenticación
-        setIsLoggedIn(false);
-        window.location.href = '/login'; // Redirige al login
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        navigate('/login');
     };
 
-    if (!isLoggedIn) {
-        return null; // O un spinner de carga, mientras redirige
+    // No renderizar el contenido de Home si no hay token o username, mientras se redirige
+    if (!localStorage.getItem('token') || !localStorage.getItem('username')) {
+        return null; // O un spinner de carga
     }
 
     return (

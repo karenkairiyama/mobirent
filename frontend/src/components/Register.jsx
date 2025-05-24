@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// import '../App.css'; // Si App.css tiene tus estilos generales
+// import '../App.css'; // Asegúrate de que tus estilos estén importados en App.css o aquí
 
 function Register() {
     const [username, setUsername] = useState('');
@@ -8,9 +8,10 @@ function Register() {
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => { // ¡Importante: usa 'async' aquí!
         e.preventDefault();
-        setMessage('');
+        setMessage(''); // Limpiar mensajes anteriores
+        setMessageType('');
 
         if (!username || !password || !confirmPassword) {
             setMessage('Todos los campos son obligatorios.');
@@ -24,16 +25,37 @@ function Register() {
             return;
         }
 
-        // Simulación de llamada al backend
-        console.log('Intentando registrar:', { username, password });
+        try {
+            // Realizar la petición POST al backend
+            const response = await fetch('http://localhost:5000/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }), // Envía los datos como JSON
+            });
 
-        // Simulación de una respuesta del backend
-        // Aquí asumiríamos que el registro fue exitoso para fines de UI
-        setMessage('Registro exitoso. Redirigiendo a login...');
-        setMessageType('success');
-        setTimeout(() => {
-            window.location.href = '/login'; // Usaremos React Router en el futuro
-        }, 2000);
+            const data = await response.json(); // Parsea la respuesta JSON
+
+            if (response.ok) { // Si la respuesta HTTP es 200-299 (éxito)
+                setMessage(data.message || 'Registro exitoso. Redirigiendo a login...');
+                setMessageType('success');
+                // Opcional: limpiar los campos después del registro exitoso
+                setUsername('');
+                setPassword('');
+                setConfirmPassword('');
+                setTimeout(() => {
+                    window.location.href = '/login'; // Redirige usando el navegador
+                }, 2000);
+            } else { // Si hay un error (ej. 400, 401, 500)
+                setMessage(data.message || 'Error en el registro.');
+                setMessageType('error');
+            }
+        } catch (error) {
+            console.error('Error al registrar usuario:', error);
+            setMessage('Ocurrió un error de red o de servidor.');
+            setMessageType('error');
+        }
     };
 
     return (
@@ -75,7 +97,7 @@ function Register() {
                 </div>
                 <button type="submit">Registrar</button>
             </form>
-            <p>¿Ya tienes una cuenta? <a href="/login">Inicia sesión aquí</a></p> {/* Usaremos React Router */}
+            <p>¿Ya tienes una cuenta? <a href="/login">Inicia sesión aquí</a></p>
             {message && <p className={`message ${messageType}`}>{message}</p>}
         </div>
     );
