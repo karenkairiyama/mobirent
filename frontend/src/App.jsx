@@ -4,6 +4,7 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import Home from './components/Home.jsx';
 import LandingPage from './components/LandingPage.jsx';
+import ForgotPassword from './components/ForgotPassword.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import VehicleManagementPage from './components/VehicleManagementPage.jsx';
 import AdminReportsPage from './components/AdminReportsPage.jsx';
@@ -42,6 +43,10 @@ function App() {
                     <Route path="/admin-reports" element={<AdminReportsPage />} />
                     {/* Nueva ruta de gestión de usuarios para el admin */}
                     <Route path="/admin-users" element={<AdminUserManagementPage />} />
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={['user','employee','admin']} />}>
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Route>
 
                 {/* Cualquier otra ruta no definida redirige a la página principal o login */}
