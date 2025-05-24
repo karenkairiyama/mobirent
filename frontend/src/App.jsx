@@ -5,6 +5,7 @@ import Register from './components/Register.jsx';
 import Home from './components/Home.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx'; // Importa el ProtectedRoute
+import ForgotPassword from './components/ForgotPassword.jsx';
 
 import './App.css';
 
@@ -59,6 +60,10 @@ function App() {
 
                 <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                     <Route path="/admin-reports" element={<AdminReportsPage />} />
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={['user','employee','admin']} />}>
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Route>
 
                 {/* Cualquier otra ruta no definida redirige a la página principal o login */}
