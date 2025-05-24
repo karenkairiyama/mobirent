@@ -16,6 +16,14 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    email: { // <-- Asegúrate de que este bloque sea idéntico
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+        match: [/.+@.+\..+/, 'Por favor, introduce un email válido']
+    },
     password: {
       type: String,
       required: true,

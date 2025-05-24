@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
-// import '../App.css'; // Asegúrate de que tus estilos estén importados en App.css o aquí
 
 function Register() {
     const [username, setUsername] = useState('');
+    const [email, setEmail] = useState(''); // <-- NUEVO ESTADO PARA EL EMAIL
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
 
-    const handleSubmit = async (e) => { // ¡Importante: usa 'async' aquí!
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage(''); // Limpiar mensajes anteriores
+        setMessage('');
         setMessageType('');
 
-        if (!username || !password || !confirmPassword) {
+        if (!username || !email || !password || !confirmPassword) { // <-- VALIDA EL EMAIL TAMBIÉN
             setMessage('Todos los campos son obligatorios.');
             setMessageType('error');
             return;
@@ -26,28 +26,27 @@ function Register() {
         }
 
         try {
-            // Realizar la petición POST al backend
             const response = await fetch('http://localhost:5000/api/auth/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }), // Envía los datos como JSON
+                body: JSON.stringify({ username, email, password }), // <-- ENVÍA EL EMAIL
             });
 
-            const data = await response.json(); // Parsea la respuesta JSON
+            const data = await response.json();
 
-            if (response.ok) { // Si la respuesta HTTP es 200-299 (éxito)
+            if (response.ok) {
                 setMessage(data.message || 'Registro exitoso. Redirigiendo a login...');
                 setMessageType('success');
-                // Opcional: limpiar los campos después del registro exitoso
                 setUsername('');
+                setEmail(''); // Limpia el campo de email
                 setPassword('');
                 setConfirmPassword('');
                 setTimeout(() => {
-                    window.location.href = '/login'; // Redirige usando el navegador
+                    window.location.href = '/login';
                 }, 2000);
-            } else { // Si hay un error (ej. 400, 401, 500)
+            } else {
                 setMessage(data.message || 'Error en el registro.');
                 setMessageType('error');
             }
@@ -70,6 +69,17 @@ function Register() {
                         name="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="regEmail">Email:</label> {/* <-- NUEVO CAMPO DE EMAIL */}
+                    <input
+                        type="email" // Usa type="email" para validación básica del navegador
+                        id="regEmail"
+                        name="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                     />
                 </div>
