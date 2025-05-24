@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/auth'); // Importa tus rutas de autenticación
+const vehicleRoutes = require('./routes/vehicleRoutes'); // Importa las rutas de vehículos
 
 const app = express();
 
@@ -19,6 +20,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Rutas de la API
 app.use('/api/auth', authRoutes); // Todas las rutas en auth.js tendrán el prefijo /api/auth
+app.use('/api/vehicles', vehicleRoutes); // Para la gestión de vehículos
 
 // Ruta de prueba
 app.get('/', (req, res) => {
