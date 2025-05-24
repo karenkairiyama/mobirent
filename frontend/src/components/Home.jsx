@@ -38,13 +38,20 @@ function Home() {
             {/* Botones condicionales según el rol */}
             <div className="button-group" style={{ flexDirection: 'column', gap: '10px' }}>
                 {userRole === 'employee' || userRole === 'admin' ? (
-                    // Asume que tendrás una ruta /vehicles-management
-                    <Link to="/vehicles-management" className="button">Gestión de Vehículos</Link>
+                    <>
+                        <Link to="/vehicles-management" className="button">Gestión de Vehículos</Link>
+                    </>
                 ) : null}
-
+                {userRole === 'employee' ? (
+                    <>
+                        <Link to="/create-user-as-employee" className="button secondary">Cargar Nuevo Cliente</Link>  
+                    </>
+                ) : null}
                 {userRole === 'admin' ? (
-                    // Asume que tendrás una ruta /admin-reports
-                    <Link to="/admin-reports" className="button secondary">Ver Reportes Admin</Link>
+                    <>
+                        <Link to="/admin-reports" className="button secondary">Ver Reportes Admin</Link>
+                        <Link to="/admin-users" className="button secondary">Gestionar Usuarios</Link>
+                    </>
                 ) : null}
 
                 <button onClick={handleLogout} style={{ marginTop: '20px' }}>Cerrar Sesión</button>
