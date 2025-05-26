@@ -1,4 +1,5 @@
 // frontend/src/components/Home.jsx
+// frontend/src/components/Home.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -63,7 +64,7 @@ function Home() {
         setUsername(null); // Limpiar estado del usuario al cerrar sesión
         setUserRole(null);
         setVehicles([]); // Opcional: limpiar vehículos si solo se muestran logueado, pero aquí no aplica
-        navigate('/login'); // Redirige a login después de cerrar sesión
+        navigate('/'); // Redirige a login después de cerrar sesión  <------------------ deberi ir a home pero bueno
     };
 
     return (

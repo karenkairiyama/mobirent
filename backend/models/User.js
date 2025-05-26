@@ -28,7 +28,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
+    dni: { // <-- NUEVO CAMPO PARA EL DNI
+        type: String,
+        required: true,
+        unique: true, // ¡Importante! Asegura que el DNI sea único
+        trim: true,
+        match: [/^\d{7,9}$/, 'El DNI debe contener entre 7 y 9 dígitos numéricos.'] // Validación básica de formato DNI
+    },
+    dateOfBirth: { // <-- NUEVO CAMPO PARA FECHA DE NACIMIENTO
+        type: Date, // Tipo Date para almacenar fechas
+        required: true,
+    },
     // --- Campos para la recuperación de contraseña ---
     resetPasswordToken: {
       type: String,

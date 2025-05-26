@@ -29,7 +29,8 @@ function App() {
                 <Route path="/login" element={isAuthenticated() ? <Navigate to="/home" replace /> : <Login />} />
                 <Route path="/register" element={isAuthenticated() ? <Navigate to="/home" replace /> : <Register />} />
 
-                <Route path="/home" element={<Home />} /> {/* Home siempre requiere autenticación */}
+                
+                    <Route path="/home" element={<Home />} /> {/* Home siempre requiere autenticación */}
 
                 <Route element={<ProtectedRoute allowedRoles={['employee', 'admin']} />}>
                     <Route path="/vehicles-management" element={<VehicleManagementPage />} />
@@ -42,10 +43,6 @@ function App() {
                     {/* Nueva ruta de gestión de usuarios para el admin */}
                     <Route path="/admin-users" element={<AdminUserManagementPage />} />
                     <Route path="/admin-create-vehicle" element={<AdminVehicleCreationPage />} />
-                </Route>
-
-                <Route element={<ProtectedRoute allowedRoles={['user','employee','admin']} />}>
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Route>
 
                 {/* Cualquier otra ruta no definida redirige a la página principal o login */}
