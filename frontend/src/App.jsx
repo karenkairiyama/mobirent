@@ -4,11 +4,14 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import Home from './components/Home.jsx';
 import LandingPage from './components/LandingPage.jsx';
+import ForgotPassword from './components/ForgotPassword.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import VehicleManagementPage from './components/VehicleManagementPage.jsx';
 import AdminReportsPage from './components/AdminReportsPage.jsx';
 import AdminUserManagementPage from './components/AdminUserManagementPage.jsx';
 import EmployeeUserCreationPage from './components/EmployeeUserCreationPage.jsx';
+import AdminVehicleCreationPage from './components/AdminVehicleCreationPage.jsx';
+
 import ResetPassword from './components/ResetPassword.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
 import './App.css';
@@ -28,10 +31,8 @@ function App() {
                 <Route path="/login" element={isAuthenticated() ? <Navigate to="/home" replace /> : <Login />} />
                 <Route path="/register" element={isAuthenticated() ? <Navigate to="/home" replace /> : <Register />} />
 
-                {/* Rutas Protegidas (se usa ProtectedRoute) */}
-                <Route element={<ProtectedRoute />}>
+                
                     <Route path="/home" element={<Home />} /> {/* Home siempre requiere autenticación */}
-                </Route>
 
                 <Route element={<ProtectedRoute allowedRoles={['employee', 'admin']} />}>
                     <Route path="/vehicles-management" element={<VehicleManagementPage />} />
