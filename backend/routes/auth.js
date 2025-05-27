@@ -11,35 +11,14 @@ const generateToken = (id) => {
     expiresIn: '1h', // El token expirará en 1 hora
   });
 };
-// ---------------------------------------------------
-// Configuración de Nodemailer
-// ---------------------------------------------------
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE, // ej: 'gmail', 'Outlook', 'SendGrid'
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
+<<<<<<<<< Temporary merge branch 1
 // Ruta de Registro de Usuario
 router.post('/register', async (req, res) => {
-    const { username, email, password, dni, dateOfBirth } = req.body; // <-- RECIBE DNI y dateOfBirth
+  const { username, email, password, dni, dateOfBirth } = req.body; // <-- RECIBE DNI y dateOfBirth
 
-    if (!username || !email || !password || !dni || !dateOfBirth) { // <-- VALIDA TODOS LOS CAMPOS
-        return res.status(400).json({ message: 'Por favor, introduce usuario, email, contraseña, DNI y fecha de nacimiento.' });
-    }
-
-    // Validación de mayoría de edad (ej. 18 años)
-    const today = new Date();
-    const dob = new Date(dateOfBirth);
-    let age = today.getFullYear() - dob.getFullYear();
-    const m = today.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-        age--;
-    }
-    if (age < 18) { // Cambia 18 por la edad mínima que desees
-        return res.status(400).json({ message: 'Debes ser mayor de 18 años para registrarte.' });
+    if (!username || !email || !password) { // <-- VALIDA EL EMAIL TAMBIÉN
+        return res.status(400).json({ message: 'Por favor, introduce usuario, email y contraseña.' });
     }
 
     try {
@@ -64,9 +43,7 @@ router.post('/register', async (req, res) => {
             res.status(201).json({
                 _id: user._id,
                 username: user.username,
-                email: user.email,
-                dni: user.dni, // <-- INCLUYE DNI EN LA RESPUESTA
-                dateOfBirth: user.dateOfBirth, // <-- INCLUYE FECHA EN LA RESPUESTA
+                email: user.email, // <-- INCLUYE EL EMAIL EN LA RESPUESTA (opcional pero útil)
                 role: user.role,
                 token: generateToken(user._id),
                 message: 'Registro exitoso.'
@@ -84,46 +61,224 @@ router.post('/register', async (req, res) => {
             if (error.keyPattern && error.keyPattern.email) {
                 return res.status(400).json({ message: 'El email ya está registrado.' });
             }
-            if (error.keyPattern && error.keyPattern.dni) {
-                return res.status(400).json({ message: 'El DNI ya está registrado.' });
-            }
         }
-        // Manejo para errores de validación de Mongoose (ej. formato de email, DNI, fecha)
+        // Manejo para errores de validación de Mongoose (ej. formato de email)
         if (error.name === 'ValidationError') {
             return res.status(400).json({ message: error.message });
         }
         res.status(500).json({ message: `Error del servidor: ${error.message}` });
+=========
+// ---------------------------------------------------
+// Configuración de Nodemailer
+// ---------------------------------------------------
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE, // ej: 'gmail', 'Outlook', 'SendGrid'
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// Ruta de Registro de Usuario
+router.post('/register', async (req, res) => {
+  const { username, email, password, dni, dateOfBirth } = req.body; // <-- RECIBE DNI y dateOfBirth
+
+  if (!username || !email || !password || !dni || !dateOfBirth) {
+    // <-- VALIDA TODOS LOS CAMPOS
+    return res
+      .status(400)
+      .json({
+        message:
+          'Por favor, introduce usuario, email, contraseña, DNI y fecha de nacimiento.',
+      });
+  }
+
+  // Validación de mayoría de edad (ej. 18 años)
+  const today = new Date();
+  const dob = new Date(dateOfBirth);
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  if (age < 18) {
+    // Cambia 18 por la edad mínima que desees
+    return res
+      .status(400)
+      .json({ message: 'Debes ser mayor de 18 años para registrarte.' });
+  }
+
+  try {
+    // Validación de unicidad de username, email y DNI
+    const userExists = await User.findOne({ username });
+    if (userExists) {
+      return res
+        .status(400)
+        .json({ message: 'El nombre de usuario ya existe.' });
     }
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      return res.status(400).json({ message: 'El email ya está registrado.' });
+    }
+    const dniExists = await User.findOne({ dni }); // <-- CHEQUEA UNICIDAD DEL DNI
+    if (dniExists) {
+      return res.status(400).json({ message: 'El DNI ya está registrado.' });
+    }
+    try {
+      // Validación de unicidad de username y email (Mongoose lo maneja con `unique: true`)
+      // Pero es bueno tener un chequeo previo para mensajes más específicos
+      const userExists = await User.findOne({ username });
+      if (userExists) {
+        return res
+          .status(400)
+          .json({ message: 'El nombre de usuario ya existe.' });
+      }
+      const emailExists = await User.findOne({ email }); // <-- CHEQUEA UNICIDAD DEL EMAIL
+      if (emailExists) {
+        return res
+          .status(400)
+          .json({ message: 'El email ya está registrado.' });
+      }
+
+      // El rol 'user' se asigna por defecto
+      const user = await User.create({
+        username,
+        email,
+        password,
+        dni,
+        dateOfBirth,
+      }); // <-- GUARDA DNI y dateOfBirth
+
+      if (user) {
+        res.status(201).json({
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          dni: user.dni, // <-- INCLUYE DNI EN LA RESPUESTA
+          dateOfBirth: user.dateOfBirth, // <-- INCLUYE FECHA EN LA RESPUESTA
+          role: user.role,
+          token: generateToken(user._id),
+          message: 'Registro exitoso.',
+        });
+      } else {
+        res.status(400).json({ message: 'Datos de usuario inválidos.' });
+      }
+    } catch (error) {
+      console.error('Error al registrar usuario:', error);
+      // Manejo específico para errores de unicidad de Mongoose (código 11000)
+      if (error.code === 11000) {
+        if (error.keyPattern && error.keyPattern.username) {
+          return res
+            .status(400)
+            .json({ message: 'El nombre de usuario ya está en uso.' });
+        }
+        if (error.keyPattern && error.keyPattern.email) {
+          return res
+            .status(400)
+            .json({ message: 'El email ya está registrado.' });
+        }
+        if (error.keyPattern && error.keyPattern.dni) {
+          return res
+            .status(400)
+            .json({ message: 'El DNI ya está registrado.' });
+        }
+      }
+      // Manejo para errores de validación de Mongoose (ej. formato de email, DNI, fecha)
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: `Error del servidor: ${error.message}` });
+    }
+    if (user) {
+      res.status(201).json({
+        _id: user._id,
+        username: user.username,
+        email: user.email, // <-- INCLUYE EL EMAIL EN LA RESPUESTA (opcional pero útil)
+        role: user.role,
+        token: generateToken(user._id),
+        message: 'Registro exitoso.',
+      });
+    } else {
+      res.status(400).json({ message: 'Datos de usuario inválidos.' });
+    }
+  } catch (error) {
+    console.error('Error al registrar usuario:', error);
+    // Manejo específico para errores de unicidad de Mongoose (código 11000)
+    if (error.code === 11000) {
+      if (error.keyPattern && error.keyPattern.username) {
+        return res
+          .status(400)
+          .json({ message: 'El nombre de usuario ya está en uso.' });
+      }
+      if (error.keyPattern && error.keyPattern.email) {
+        return res
+          .status(400)
+          .json({ message: 'El email ya está registrado.' });
+      }
+    }
+    // Manejo para errores de validación de Mongoose (ej. formato de email)
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: `Error del servidor: ${error.message}` });
+  }
 });
 
 // Ruta de Inicio de Sesión (modificada para incluir DNI y dateOfBirth en la respuesta si lo deseas)
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Por favor, introduce usuario y contraseña.' });
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: 'Por favor, introduce usuario y contraseña.' });
+  }
+
+  try {
+    const user = await User.findOne({ username });
+
+    if (user && (await user.matchPassword(password))) {
+      res.json({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        dni: user.dni, // <-- INCLUYE DNI EN LA RESPUESTA DE LOGIN
+        dateOfBirth: user.dateOfBirth, // <-- INCLUYE FECHA EN LA RESPUESTA DE LOGIN
+        role: user.role,
+        token: generateToken(user._id),
+        message: 'Inicio de sesión exitoso.',
+      });
+    } else {
+      res.status(401).json({ message: 'Credenciales inválidas.' });
     }
+  } catch (error) {
+    res.status(500).json({ message: `Error del servidor: ${error.message}` });
+  }
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: 'Por favor, introduce usuario y contraseña.' });
+  }
 
-    try {
-        const user = await User.findOne({ username });
+  try {
+    const user = await User.findOne({ username });
 
-        if (user && (await user.matchPassword(password))) {
-            res.json({
-                _id: user._id,
-                username: user.username,
-                email: user.email,
-                dni: user.dni,           // <-- INCLUYE DNI EN LA RESPUESTA DE LOGIN
-                dateOfBirth: user.dateOfBirth, // <-- INCLUYE FECHA EN LA RESPUESTA DE LOGIN
-                role: user.role,
-                token: generateToken(user._id),
-                message: 'Inicio de sesión exitoso.'
-            });
-        } else {
-            res.status(401).json({ message: 'Credenciales inválidas.' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: `Error del servidor: ${error.message}` });
+    if (user && (await user.matchPassword(password))) {
+      res.json({
+        _id: user._id,
+        username: user.username,
+        email: user.email, // <-- INCLUYE EL EMAIL EN LA RESPUESTA DE LOGIN
+        role: user.role,
+        token: generateToken(user._id),
+        message: 'Inicio de sesión exitoso.',
+      });
+    } else {
+      res.status(401).json({ message: 'Credenciales inválidas.' });
     }
+  } catch (error) {
+    res.status(500).json({ message: `Error del servidor: ${error.message}` });
+  }
 });
 
 // ---------------------------------------------------
@@ -184,6 +339,72 @@ router.post('/forgot-password', async (req, res) => {
     res.status(500).json({
       message:
         'Error interno del servidor al procesar la solicitud de recuperación de contraseña.',
+    });
+  }
+});
+
+router.post('/reset-password/:token', async (req, res) => {
+  const { token } = req.params; // Obtiene el token de los parámetros de la URL
+  const { newPassword } = req.body; // Obtiene la nueva contraseña del cuerpo de la petición
+
+  // 1. Validar la nueva contraseña
+  if (!newPassword || newPassword.length < 6) {
+    // Ejemplo de validación mínima
+    return res.status(400).json({
+      message: 'La nueva contraseña debe tener al menos 6 caracteres.',
+    });
+  }
+
+  try {
+    // 2. Verificar el token JWT
+    // Usa JWT_SECRET (o JWT_SECRET_KEY si ese es el nombre de tu variable en .env)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Buscar al usuario por el ID decodificado del token y asegurarse de que el token
+    // almacenado en la DB coincide y no ha expirado.
+    const user = await User.findOne({
+      _id: decoded.id,
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }, // $gt significa "greater than" (mayor que)
+    });
+
+    if (!user) {
+      // Si el token no se encuentra o ha expirado, responde con un error
+      return res.status(400).json({
+        message: 'El token de restablecimiento es inválido o ha expirado.',
+      });
+    }
+
+    // 3. Asignar y hashear la nueva contraseña
+    // El middleware pre('save') en tu modelo de usuario se encargará de hashearla automáticamente
+    user.password = newPassword;
+
+    // 4. Limpiar los campos del token para que no pueda ser reutilizado
+    user.resetPasswordToken = undefined; // O null
+    user.resetPasswordExpires = undefined; // O null
+    await user.save(); // Guarda el usuario con la nueva contraseña hasheada y tokens limpios
+
+    res.status(200).json({
+      message:
+        'Contraseña restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.',
+    });
+  } catch (error) {
+    // Manejo de errores específicos de JWT (ej. TokenExpiredError, JsonWebTokenError)
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        message:
+          'El token de restablecimiento ha expirado. Por favor, solicita uno nuevo.',
+      });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        message:
+          'Token de restablecimiento inválido. Por favor, solicita uno nuevo.',
+      });
+    }
+    console.error('Error en /reset-password/:token:', error); // Esto es para ver errores en la consola del backend
+    res.status(500).json({
+      message: 'Error interno del servidor al restablecer la contraseña.',
     });
   }
 });

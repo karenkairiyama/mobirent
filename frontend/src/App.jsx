@@ -12,6 +12,8 @@ import AdminUserManagementPage from './components/AdminUserManagementPage.jsx';
 import EmployeeUserCreationPage from './components/EmployeeUserCreationPage.jsx';
 import AdminVehicleCreationPage from './components/AdminVehicleCreationPage.jsx';
 
+import ResetPassword from './components/ResetPassword.jsx';
+import ForgotPassword from './components/ForgotPassword.jsx';
 import './App.css';
 
 function App() {
@@ -42,9 +44,15 @@ function App() {
                     <Route path="/admin-reports" element={<AdminReportsPage />} />
                     {/* Nueva ruta de gestión de usuarios para el admin */}
                     <Route path="/admin-users" element={<AdminUserManagementPage />} />
-                    <Route path="/admin-create-vehicle" element={<AdminVehicleCreationPage />} />
                 </Route>
 
+                <Route element={<ProtectedRoute allowedRoles={['user','employee','admin']} />}>
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={['user','employee','admin']} />}>
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+                </Route>
                 {/* Cualquier otra ruta no definida redirige a la página principal o login */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
