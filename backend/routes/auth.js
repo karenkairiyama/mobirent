@@ -11,7 +11,6 @@ const generateToken = (id) => {
     expiresIn: '1h', // El token expirará en 1 hora
   });
 };
-
 // ---------------------------------------------------
 // Configuración de Nodemailer
 // ---------------------------------------------------
@@ -23,30 +22,40 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Ruta de Registro de Usuario (NO necesita cambios aquí para el rol por defecto)
+// Ruta de Registro de Usuario
 router.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, email, password } = req.body; // <-- RECIBE EL EMAIL
 
-  if (!username || !password) {
+  if (!username || !email || !password) {
+    // <-- VALIDA EL EMAIL TAMBIÉN
     return res
       .status(400)
-      .json({ message: 'Por favor, introduce usuario y contraseña.' });
+      .json({ message: 'Por favor, introduce usuario, email y contraseña.' });
   }
 
   try {
+    // Validación de unicidad de username y email (Mongoose lo maneja con `unique: true`)
+    // Pero es bueno tener un chequeo previo para mensajes más específicos
     const userExists = await User.findOne({ username });
     if (userExists) {
-      return res.status(400).json({ message: 'El usuario ya existe.' });
+      return res
+        .status(400)
+        .json({ message: 'El nombre de usuario ya existe.' });
+    }
+    const emailExists = await User.findOne({ email }); // <-- CHEQUEA UNICIDAD DEL EMAIL
+    if (emailExists) {
+      return res.status(400).json({ message: 'El email ya está registrado.' });
     }
 
-    // El rol 'user' se asigna por defecto gracias al modelo User.js
-    const user = await User.create({ username, password });
+    // El rol 'user' se asigna por defecto
+    const user = await User.create({ username, email, password }); // <-- GUARDA EL EMAIL
 
     if (user) {
       res.status(201).json({
         _id: user._id,
         username: user.username,
-        role: user.role, // <-- INCLUYE EL ROL EN LA RESPUESTA
+        email: user.email, // <-- INCLUYE EL EMAIL EN LA RESPUESTA (opcional pero útil)
+        role: user.role,
         token: generateToken(user._id),
         message: 'Registro exitoso.',
       });
@@ -54,19 +63,31 @@ router.post('/register', async (req, res) => {
       res.status(400).json({ message: 'Datos de usuario inválidos.' });
     }
   } catch (error) {
+    console.error('Error al registrar usuario:', error);
+    // Manejo específico para errores de unicidad de Mongoose (código 11000)
     if (error.code === 11000) {
-      return res
-        .status(400)
-        .json({ message: 'El nombre de usuario ya está en uso.' });
+      if (error.keyPattern && error.keyPattern.username) {
+        return res
+          .status(400)
+          .json({ message: 'El nombre de usuario ya está en uso.' });
+      }
+      if (error.keyPattern && error.keyPattern.email) {
+        return res
+          .status(400)
+          .json({ message: 'El email ya está registrado.' });
+      }
+    }
+    // Manejo para errores de validación de Mongoose (ej. formato de email)
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
     }
     res.status(500).json({ message: `Error del servidor: ${error.message}` });
   }
 });
 
-// Ruta de Inicio de Sesión
+// Ruta de Inicio de Sesión (NO necesita cambios si solo usas username y password)
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-
   if (!username || !password) {
     return res
       .status(400)
@@ -80,7 +101,8 @@ router.post('/login', async (req, res) => {
       res.json({
         _id: user._id,
         username: user.username,
-        role: user.role, // <-- INCLUYE EL ROL EN LA RESPUESTA
+        email: user.email, // <-- INCLUYE EL EMAIL EN LA RESPUESTA DE LOGIN
+        role: user.role,
         token: generateToken(user._id),
         message: 'Inicio de sesión exitoso.',
       });
@@ -150,6 +172,72 @@ router.post('/forgot-password', async (req, res) => {
     res.status(500).json({
       message:
         'Error interno del servidor al procesar la solicitud de recuperación de contraseña.',
+    });
+  }
+});
+
+router.post('/reset-password/:token', async (req, res) => {
+  const { token } = req.params; // Obtiene el token de los parámetros de la URL
+  const { newPassword } = req.body; // Obtiene la nueva contraseña del cuerpo de la petición
+
+  // 1. Validar la nueva contraseña
+  if (!newPassword || newPassword.length < 6) {
+    // Ejemplo de validación mínima
+    return res.status(400).json({
+      message: 'La nueva contraseña debe tener al menos 6 caracteres.',
+    });
+  }
+
+  try {
+    // 2. Verificar el token JWT
+    // Usa JWT_SECRET (o JWT_SECRET_KEY si ese es el nombre de tu variable en .env)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Buscar al usuario por el ID decodificado del token y asegurarse de que el token
+    // almacenado en la DB coincide y no ha expirado.
+    const user = await User.findOne({
+      _id: decoded.id,
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }, // $gt significa "greater than" (mayor que)
+    });
+
+    if (!user) {
+      // Si el token no se encuentra o ha expirado, responde con un error
+      return res.status(400).json({
+        message: 'El token de restablecimiento es inválido o ha expirado.',
+      });
+    }
+
+    // 3. Asignar y hashear la nueva contraseña
+    // El middleware pre('save') en tu modelo de usuario se encargará de hashearla automáticamente
+    user.password = newPassword;
+
+    // 4. Limpiar los campos del token para que no pueda ser reutilizado
+    user.resetPasswordToken = undefined; // O null
+    user.resetPasswordExpires = undefined; // O null
+    await user.save(); // Guarda el usuario con la nueva contraseña hasheada y tokens limpios
+
+    res.status(200).json({
+      message:
+        'Contraseña restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.',
+    });
+  } catch (error) {
+    // Manejo de errores específicos de JWT (ej. TokenExpiredError, JsonWebTokenError)
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        message:
+          'El token de restablecimiento ha expirado. Por favor, solicita uno nuevo.',
+      });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        message:
+          'Token de restablecimiento inválido. Por favor, solicita uno nuevo.',
+      });
+    }
+    console.error('Error en /reset-password/:token:', error); // Esto es para ver errores en la consola del backend
+    res.status(500).json({
+      message: 'Error interno del servidor al restablecer la contraseña.',
     });
   }
 });

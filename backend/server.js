@@ -1,33 +1,31 @@
-require('dotenv').config(); // Carga las variables de entorno desde .env
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const authRoutes = require('./routes/auth'); // Importa tus rutas de autenticación
-const vehicleRoutes = require('./routes/vehicleRoutes'); // Importa las rutas de vehículos
+const authRoutes = require('./routes/auth');
+const vehicleRoutes = require('./routes/vehicleRoutes');
+const adminRoutes = require('./routes/adminRoutes'); // <-- NUEVO: Importa las rutas de admin
 
 const app = express();
 
-// Middleware para habilitar CORS
 app.use(cors());
-
-// Middleware para parsear JSON en el cuerpo de las peticiones
 app.use(express.json());
 
-// Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Conectado a MongoDB Atlas'))
     .catch(err => console.error('❌ Error al conectar a MongoDB:', err.message));
 
 // Rutas de la API
-app.use('/api/auth', authRoutes); // Todas las rutas en auth.js tendrán el prefijo /api/auth
-app.use('/api/vehicles', vehicleRoutes); // Para la gestión de vehículos
+app.use('/api/auth', authRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/admin', adminRoutes); // <-- NUEVO: Para la gestión de admin
 
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.send('API de Mobirent corriendo...');
 });
 
-const PORT = process.env.PORT || 5000; // Usa el puerto definido en .env o 5000 por defecto
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);

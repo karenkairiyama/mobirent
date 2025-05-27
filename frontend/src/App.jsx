@@ -4,37 +4,16 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import Home from './components/Home.jsx';
 import LandingPage from './components/LandingPage.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx'; // Importa el ProtectedRoute
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import VehicleManagementPage from './components/VehicleManagementPage.jsx';
+import AdminReportsPage from './components/AdminReportsPage.jsx';
+import AdminUserManagementPage from './components/AdminUserManagementPage.jsx';
+import EmployeeUserCreationPage from './components/EmployeeUserCreationPage.jsx';
+import ResetPassword from './components/ResetPassword.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
-
 import './App.css';
 
-// Componentes de ejemplo para las nuevas rutas
-// Podrías crear archivos separados para estos, pero para el ejemplo los defino aquí
-const VehicleManagementPage = () => {
-    return (
-        <div className="container">
-            <h1>Gestión de Vehículos</h1>
-            <p>Aquí se gestionarán los vehículos (solo empleados y administradores).</p>
-            <Link to="/home">Volver a Home</Link>
-        </div>
-    );
-};
-
-const AdminReportsPage = () => {
-    return (
-        <div className="container">
-            <h1>Reportes de Administración</h1>
-            <p>Aquí se mostrarán los reportes (solo administradores).</p>
-            <Link to="/home">Volver a Home</Link>
-        </div>
-    );
-};
-
-
 function App() {
-    // Función para verificar si el usuario está autenticado (con token y username)
-    // Se mantiene aquí, aunque ProtectedRoute también la usa internamente
     const isAuthenticated = () => {
         return localStorage.getItem('token') !== null && localStorage.getItem('username') !== null;
     };
@@ -56,16 +35,23 @@ function App() {
 
                 <Route element={<ProtectedRoute allowedRoles={['employee', 'admin']} />}>
                     <Route path="/vehicles-management" element={<VehicleManagementPage />} />
+                    {/* NUEVA RUTA para que empleado/admin puedan crear usuarios 'user' */}
+                    <Route path="/create-user-as-employee" element={<EmployeeUserCreationPage />} />
                 </Route>
 
                 <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                     <Route path="/admin-reports" element={<AdminReportsPage />} />
+                    {/* Nueva ruta de gestión de usuarios para el admin */}
+                    <Route path="/admin-users" element={<AdminUserManagementPage />} />
                 </Route>
 
                 <Route element={<ProtectedRoute allowedRoles={['user','employee','admin']} />}>
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Route>
 
+                <Route element={<ProtectedRoute allowedRoles={['user','employee','admin']} />}>
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+                </Route>
                 {/* Cualquier otra ruta no definida redirige a la página principal o login */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

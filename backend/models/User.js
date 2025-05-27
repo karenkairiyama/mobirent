@@ -16,11 +16,19 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    email: {
+      // <-- Asegúrate de que este bloque sea idéntico
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      match: [/.+@.+\..+/, 'Por favor, introduce un email válido'],
+    },
     password: {
       type: String,
       required: true,
     },
-
     // --- Campos para la recuperación de contraseña ---
     resetPasswordToken: {
       type: String,
@@ -31,16 +39,14 @@ const userSchema = new mongoose.Schema(
       default: null, // Por defecto no habrá fecha de expiración
     },
     // --- Fin de campos para recuperación de contraseña ---
-
     role: {
-      // <-- NUEVO CAMPO PARA EL ROL
       type: String,
-      enum: ['user', 'employee', 'admin'], // Roles permitidos
-      default: 'user', // Rol por defecto al registrarse
+      enum: ['user', 'employee', 'admin'],
+      default: 'user',
     },
   },
   {
-    timestamps: true, // Esto añade campos `createdAt` y `updatedAt` automáticamente
+    timestamps: true,
   }
 );
 
