@@ -9,39 +9,26 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    email: {
-      // <-- Asegúrate de que este bloque sea idéntico
+    email: { 
       type: String,
       required: true,
       unique: true,
       trim: true,
       lowercase: true,
-      match: [/.+@.+\..+/, 'Por favor, introduce un email válido'],
+      match: [/.+@.+\..+/, 'Por favor, introduce un email válido']
     },
     password: {
       type: String,
       required: true,
     },
-    dni: {
-      // <-- NUEVO CAMPO PARA EL DNI
+    dni: { // <-- NUEVO CAMPO PARA EL DNI
       type: String,
       required: true,
       unique: true, // ¡Importante! Asegura que el DNI sea único
       trim: true,
-      match: [
-        /^\d{7,9}$/,
-        'El DNI debe contener entre 7 y 9 dígitos numéricos.',
-      ], // Validación básica de formato DNI
+      match: [/^\d{7,9}$/, 'El DNI debe contener entre 7 y 9 dígitos numéricos.'] // Validación básica de formato DNI
     },
-    dateOfBirth: {
-      // <-- NUEVO CAMPO PARA FECHA DE NACIMIENTO
+    dateOfBirth: { // <-- NUEVO CAMPO PARA FECHA DE NACIMIENTO
       type: Date, // Tipo Date para almacenar fechas
       required: true,
     },
