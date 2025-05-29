@@ -4,13 +4,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
+const generateToken = require('../utils/generateToken');
 
-// Función para generar un token JWT
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '1h', // El token expirará en 1 hora
-  });
-};
 // ---------------------------------------------------
 // Configuración de Nodemailer
 // ---------------------------------------------------

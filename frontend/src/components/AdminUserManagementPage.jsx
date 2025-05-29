@@ -3,8 +3,12 @@ import { useNavigate } from 'react-router-dom';
 
 function AdminUserManagementPage() {
     const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [role, setRole] = useState('employee'); // Por defecto para crear empleados
+    const [dni, setDni] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState('');
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
     const [users, setUsers] = useState([]); // Para listar usuarios
@@ -49,8 +53,8 @@ function AdminUserManagementPage() {
         setMessage('');
         setMessageType('');
 
-        if (!username || !password) {
-            setMessage('Por favor, introduce usuario y contraseña.');
+        if (!username || !email || !password || !confirmPassword || !dni || !dateOfBirth) { // <-- VALIDA TODOS LOS CAMPOS
+            setMessage('Todos los campos son obligatorios.');
             setMessageType('error');
             return;
         }
@@ -63,6 +67,25 @@ function AdminUserManagementPage() {
             return;
         }
 
+        if (password !== confirmPassword) {
+            setMessage('Las contraseñas no coinciden.');
+            setMessageType('error');
+            return;
+        }
+
+        const today = new Date();
+        const dob = new Date(dateOfBirth);
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        if (age < 18) { // Mismo límite de edad que en el backend
+            setMessage('Debes ser mayor de 18 años para registrarte.');
+            setMessageType('error');
+            return;
+        }
+
         try {
             const response = await fetch('http://localhost:5000/api/admin/users', {
                 method: 'POST',
@@ -70,7 +93,7 @@ function AdminUserManagementPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`, // Envía el token de admin
                 },
-                body: JSON.stringify({ username, password, role }),
+                body: JSON.stringify({ username, email, password, dni, dateOfBirth, role }),
             });
 
             const data = await response.json();
@@ -79,7 +102,11 @@ function AdminUserManagementPage() {
                 setMessage(data.message || 'Usuario creado exitosamente.');
                 setMessageType('success');
                 setUsername('');
+                setEmail('');
                 setPassword('');
+                setConfirmPassword('');
+                setDni('');           // Limpia el campo de DNI
+                setDateOfBirth(''); 
                 setRole('employee'); // Resetear al rol por defecto
                 fetchUsers(); // Volver a cargar la lista de usuarios
             } else {
@@ -116,6 +143,43 @@ function AdminUserManagementPage() {
                     />
                 </div>
                 <div className="form-group">
+                    <label htmlFor="adminEmail">Email:</label>
+                    <input
+                        type="email"
+                        id="adminEmail"
+                        name="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="adminDni">DNI:</label> {/* <-- NUEVO CAMPO DE DNI */}
+                    <input
+                        type="text" // Usar type="text" para permitir validación de formato más flexible
+                        id="adminDni"
+                        name="dni"
+                        value={dni}
+                        onChange={(e) => setDni(e.target.value)}
+                        required
+                        pattern="\d{7,9}" // Validación HTML5 para 7 a 9 dígitos numéricos
+                        title="El DNI debe contener entre 7 y 9 dígitos numéricos."
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="adminDateOfBirth">Fecha de Nacimiento:</label> {/* <-- NUEVO CAMPO DE FECHA */}
+                    <input
+                        type="date" // Usa type="date" para el selector de fecha del navegador
+                        id="adminDateOfBirth"
+                        name="dateOfBirth"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        required
+                        // min="1900-01-01" // Opcional: limitar fecha mínima
+                        max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+                    />
+                </div>
+                <div className="form-group">
                     <label htmlFor="adminPassword">Contraseña:</label>
                     <input
                         type="password"
@@ -123,6 +187,17 @@ function AdminUserManagementPage() {
                         name="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="adminConfirmPassword">Confirmar Contraseña:</label>
+                    <input
+                        type="password"
+                        id="adminConfirmPassword"
+                        name="confirmPassword"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                     />
                 </div>
