@@ -2,38 +2,44 @@
 
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/authMiddleware'); // Aún necesitamos protect/authorize para otras rutas
+const { protect, authorize } = require('../middleware/authMiddleware');
 const {
     createVehicle,
     getAllVehicles,
-    getAvailableVehicles, // Esta es la función que queremos hacer pública
-    addVehicle,
-    removeVehicle,
-    getVehicles,
+    getAvailableVehicles,
+    updateVehicleStatus,
     getReports
 } = require('../controllers/vehicleController');
 
-// --- Rutas de Gestión de Vehículos (Requieren roles específicos) ---
+
+// --- Rutas de Vehículos Accesibles por CUALQUIER usuario (incluso no logueados) ---
+router.get('/', getAvailableVehicles);
+
+
+// --- Rutas de Gestión de Vehículos (Requieren autenticación y roles específicos) ---
 
 // Ruta para CREAR un nuevo vehículo: Requiere autenticación y rol de 'admin'
+// ¡CORRECCIÓN AQUÍ! Pasa los roles directamente sin un array externo
 router.post('/', protect, authorize('admin'), createVehicle);
 
-// Ruta para OBTENER TODOS los vehículos (para el panel de admin/empleado): Requiere autenticación y rol de 'employee' o 'admin'
-router.get('/all', protect, authorize('employee', 'admin'), getAllVehicles);
+// Ruta para OBTENER TODOS los vehículos (para el panel de admin/empleado)
+// ¡CORRECCIÓN AQUÍ! Pasa los roles directamente sin un array externo
+router.get('/all', protect, authorize('admin', 'employee'), getAllVehicles);
 
-// Ruta para obtener reportes (si sigue aquí, si no, se iría a adminRoutes.js)
+// Ruta para ACTUALIZAR el estado de un vehículo (mantenimiento o disponibilidad)
+// ¡CORRECCIÓN AQUÍ! Pasa los roles directamente sin un array externo
+router.put('/:id/status', protect, authorize('admin', 'employee'), updateVehicleStatus);
+
+
+// --- Rutas de Reportes (Si aplica, solo para Admin) ---
+// ¡CORRECCIÓN AQUÍ! Pasa los roles directamente sin un array externo
 router.get('/reports', protect, authorize('admin'), getReports);
 
-// --- Rutas Públicas/Generales (solo requieren autenticación) ---
 
-// *********** MODIFICACIÓN CRÍTICA AQUÍ ***********
-// Ruta para obtener VEHÍCULOS DISPONIBLES (para la página principal/Home):
-// YA NO REQUIERE 'protect', ¡AHORA ES PÚBLICA!
-router.get('/', getAvailableVehicles); // <-- Eliminado 'protect'
-
-// Las rutas simuladas viejas que tenías, si todavía las necesitas y no chocan:
-router.post('/', protect, authorize('employee', 'admin'), addVehicle);
-router.delete('/:id', protect, authorize('employee', 'admin'), removeVehicle);
-router.get('/', protect, getVehicles);
+// --- Rutas antiguas/obsoletas - Considera eliminarlas si ya no las necesitas ---
+// (Estas líneas deben seguir comentadas o eliminadas, no las descomentes)
+// router.post('/', protect, authorize(['employee', 'admin']), addVehicle);
+// router.delete('/:id', protect, authorize(['employee', 'admin']), removeVehicle);
+// router.get('/', protect, getVehicles);
 
 module.exports = router;
