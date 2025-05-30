@@ -1,10 +1,10 @@
 // frontend/src/components/Home.jsx
-// frontend/src/components/Home.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import '../App.css'; // Asegúrate de que tus estilos estén importados
 
 function Home() {
-    const [username, setUsername] = useState(null); // Empezamos con null para saber si no hay usuario
+    const [username, setUsername] = useState(null);
     const [userRole, setUserRole] = useState(null);
     const [vehicles, setVehicles] = useState([]);
     const navigate = useNavigate();
@@ -14,34 +14,31 @@ function Home() {
         const token = localStorage.getItem('token');
         const role = localStorage.getItem('userRole');
 
-        // Establecer el estado del usuario si está logueado
         if (storedUsername && token && role) {
             setUsername(storedUsername);
             setUserRole(role);
         } else {
-            // Si no está logueado, los estados quedan en null
             setUsername(null);
             setUserRole(null);
         }
-        // *********** Importante: Siempre intentar cargar vehículos ***********
-        // La función fetchAvailableVehicles ahora manejará si hay token o no
+        // Siempre intentar cargar vehículos
         fetchAvailableVehicles(token);
 
-    }, [navigate]); // navigate solo si se usa en el cuerpo principal del useEffect
+    }, [navigate]);
 
     const fetchAvailableVehicles = async (token) => {
         try {
             const headers = {
                 'Content-Type': 'application/json',
             };
-            // Si hay un token, lo incluimos en los headers
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
+            // Esta ruta traerá los vehículos que estén 'isAvailable: true' y 'needsMaintenance: false'
             const response = await fetch('http://localhost:5000/api/vehicles', {
                 method: 'GET',
-                headers: headers, // Usamos los headers condicionales
+                headers: headers,
             });
 
             const data = await response.json();
@@ -61,21 +58,20 @@ function Home() {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
         localStorage.removeItem('userRole');
-        setUsername(null); // Limpiar estado del usuario al cerrar sesión
+        setUsername(null);
         setUserRole(null);
-        setVehicles([]); // Opcional: limpiar vehículos si solo se muestran logueado, pero aquí no aplica
-        navigate('/'); // Redirige a login después de cerrar sesión  <------------------ deberi ir a home pero bueno
+        setVehicles([]);
+        navigate('/'); // Redirige a la LandingPage después de cerrar sesión
     };
 
     return (
         <div className="container">
-            {/* *********** MODIFICACIÓN CRÍTICA: Contenido condicional para logueados/no logueados *********** */}
-            {username ? ( // Si hay un username (está logueado)
+            {username ? (
                 <>
                     <h1>Bienvenido, <span id="welcomeUsername">{username}</span>!</h1>
                     <p>Esta es tu página principal. Tu rol es: **{userRole.toUpperCase()}**</p>
                 </>
-            ) : ( // Si no hay username (no está logueado)
+            ) : (
                 <>
                     <h1>Explora Nuestra Flota de Vehículos</h1>
                     <p>Mira los vehículos disponibles para alquilar. ¡Regístrate o inicia sesión para reservar!</p>
@@ -83,7 +79,7 @@ function Home() {
             )}
 
             <div className="button-group" style={{ flexDirection: 'column', gap: '10px' }}>
-                {username ? ( // Si el usuario está logueado, muestra sus botones de rol
+                {username ? (
                     <>
                         {userRole === 'employee' || userRole === 'admin' ? (
                             <Link to="/vehicles-management" className="button">Gestión de Vehículos</Link>
@@ -98,11 +94,13 @@ function Home() {
                                 <Link to="/admin-reports" className="button secondary">Ver Reportes Admin</Link>
                                 <Link to="/admin-users" className="button secondary">Gestionar Usuarios</Link>
                                 <Link to="/admin-create-vehicle" className="button secondary">Crear Nuevo Vehículo</Link>
+                                {/* NUEVO: Botón para crear sucursales (puedes añadir la ruta si creaste una página para ello) */}
+                                {/* <Link to="/admin-create-branch" className="button secondary">Crear Nueva Sucursal</Link> */}
                             </>
                         ) : null}
                         <button onClick={handleLogout} style={{ marginTop: '20px' }}>Cerrar Sesión</button>
                     </>
-                ) : ( // Si el usuario NO está logueado, muestra Iniciar Sesión y Registrarse
+                ) : (
                     <>
                         <Link to="/login" className="button">Iniciar Sesión</Link>
                         <Link to="/register" className="button secondary">Registrarse</Link>
@@ -121,8 +119,19 @@ function Home() {
                             <div key={vehicle._id} style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '15px', textAlign: 'center', backgroundColor: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
                                 <img src={vehicle.photoUrl || 'https://via.placeholder.com/150?text=No+Photo'} alt={`${vehicle.brand} ${vehicle.model}`} style={{ maxWidth: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px', marginBottom: '10px' }} />
                                 <h3>{vehicle.brand} {vehicle.model}</h3>
+                                <p>Tipo: **{vehicle.type}**</p>
+                                <p>Patente: **{vehicle.licensePlate}**</p>
+                                <p>Capacidad: **{vehicle.capacity} personas**</p>
+                                <p>Transmisión: **{vehicle.transmission === 'automatic' ? 'Automática' : 'Manual'}**</p>
+                                {/* ¡CAMBIO AQUÍ! Acceso seguro a las propiedades de la sucursal */}
+                                <p>Sucursal: **{vehicle.branch ? vehicle.branch.name : 'N/A'}**</p>
+                                <p style={{ fontSize: '0.8em', color: '#666' }}>Dirección: {vehicle.branch ? vehicle.branch.address : 'N/A'}</p>
+                                {/* FIN CAMBIO */}
                                 <p>Precio por Día: **${vehicle.pricePerDay.toFixed(2)}**</p>
+                                {/* Opcional: Mostrar si está en mantenimiento, aunque getAvailableVehicles ya filtra por esto */}
+                                {vehicle.needsMaintenance && <p style={{ color: 'red', fontWeight: 'bold' }}>¡En Mantenimiento!</p>}
                                 <p style={{ fontSize: '0.8em', color: '#666' }}>ID: {vehicle.vehicleId}</p>
+
                                 {/* El botón "Alquilar" se mostrará, pero la funcionalidad real requeriría estar logueado */}
                                 <button className="button" style={{ width: '100%', marginTop: '10px' }}>Alquilar</button>
                             </div>
