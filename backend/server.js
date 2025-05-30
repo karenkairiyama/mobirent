@@ -1,3 +1,4 @@
+// backend/server.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -5,7 +6,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const vehicleRoutes = require('./routes/vehicleRoutes');
 const adminRoutes = require('./routes/adminRoutes'); // <-- NUEVO: Importa las rutas de admin
-
+const branchRoutes = require('./routes/branchRoutes'); // Añade esta línea
 const app = express();
 
 app.use(cors());
@@ -18,6 +19,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/branches', branchRoutes); 
 app.use('/api/admin', adminRoutes); // <-- NUEVO: Para la gestión de admin
 
 // Ruta de prueba

@@ -1,5 +1,4 @@
 // frontend/src/components/Home.jsx
-// frontend/src/components/Home.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx"; // Importa useAuth
@@ -28,9 +27,10 @@ function Home() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      // Esta ruta traerá los vehículos que estén 'isAvailable: true' y 'needsMaintenance: false'
       const response = await fetch("http://localhost:5000/api/vehicles", {
         method: "GET",
-        headers: headers, // Usamos los headers condicionales
+        headers: headers,
       });
 
       const data = await response.json();
