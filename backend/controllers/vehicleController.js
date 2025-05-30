@@ -157,6 +157,7 @@ const updateVehicleStatus = async (req, res) => {
             // Empleados solo pueden cambiar 'needsMaintenance'
             if (typeof needsMaintenance === 'boolean') {
                 vehicle.needsMaintenance = needsMaintenance;
+                vehicle.isAvailable = true;
                 // Si se marca en mantenimiento, se vuelve no disponible
                 if (needsMaintenance) {
                     vehicle.isAvailable = false;
