@@ -1,11 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
-const bcrypt = require('bcryptjs');
-const generateToken = require('../utils/generateToken');
-
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
+const generateToken = require("../utils/generateToken");
 
 // ---------------------------------------------------
 // Configuración de Nodemailer
@@ -19,74 +18,89 @@ const transporter = nodemailer.createTransport({
 });
 
 // Ruta de Registro de Usuario
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
   const { username, email, password, dni, dateOfBirth } = req.body; // <-- RECIBE DNI y dateOfBirth
 
-    if (!username || !email || !password) { // <-- VALIDA EL EMAIL TAMBIÉN
-        return res.status(400).json({ message: 'Por favor, introduce usuario, email y contraseña.' });
-    }
-
-    try {
-        // Validación de unicidad de username, email y DNI
-        const userExists = await User.findOne({ username });
-        if (userExists) {
-            return res.status(400).json({ message: 'El nombre de usuario ya existe.' });
-        }
-        const emailExists = await User.findOne({ email });
-        if (emailExists) {
-            return res.status(400).json({ message: 'El email ya está registrado.' });
-        }
-        const dniExists = await User.findOne({ dni }); // <-- CHEQUEA UNICIDAD DEL DNI
-        if (dniExists) {
-            return res.status(400).json({ message: 'El DNI ya está registrado.' });
-        }
-
-        // El rol 'user' se asigna por defecto
-        const user = await User.create({ username, email, password, dni, dateOfBirth }); // <-- GUARDA DNI y dateOfBirth
-
-        if (user) {
-            res.status(201).json({
-                _id: user._id,
-                username: user.username,
-                email: user.email, // <-- INCLUYE EL EMAIL EN LA RESPUESTA (opcional pero útil)
-                role: user.role,
-                token: generateToken(user._id),
-                message: 'Registro exitoso.'
-            });
-        } else {
-            res.status(400).json({ message: 'Datos de usuario inválidos.' });
-        }
-    } catch (error) {
-        console.error('Error al registrar usuario:', error);
-        // Manejo específico para errores de unicidad de Mongoose (código 11000)
-        if (error.code === 11000) {
-            if (error.keyPattern && error.keyPattern.username) {
-                return res.status(400).json({ message: 'El nombre de usuario ya está en uso.' });
-            }
-            if (error.keyPattern && error.keyPattern.email) {
-                return res.status(400).json({ message: 'El email ya está registrado.' });
-            }
-        }
-        // Manejo para errores de validación de Mongoose (ej. formato de email)
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: error.message });
-        }
-        res.status(500).json({ message: `Error del servidor: ${error.message}` });
-   }
-});
-
-// Ruta de Inicio de Sesión (modificada para incluir DNI y dateOfBirth en la respuesta si lo deseas)
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
+  if (!username || !email || !password) {
+    // <-- VALIDA EL EMAIL TAMBIÉN
     return res
       .status(400)
-      .json({ message: 'Por favor, introduce usuario y contraseña.' });
+      .json({ message: "Por favor, introduce usuario, email y contraseña." });
   }
 
   try {
-    const user = await User.findOne({ username });
+    // Validación de unicidad de username, email y DNI
+    const userExists = await User.findOne({ username });
+    if (userExists) {
+      return res
+        .status(400)
+        .json({ message: "El nombre de usuario ya existe." });
+    }
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      return res.status(400).json({ message: "El email ya está registrado." });
+    }
+    const dniExists = await User.findOne({ dni }); // <-- CHEQUEA UNICIDAD DEL DNI
+    if (dniExists) {
+      return res.status(400).json({ message: "El DNI ya está registrado." });
+    }
+
+    // El rol 'user' se asigna por defecto
+    const user = await User.create({
+      username,
+      email,
+      password,
+      dni,
+      dateOfBirth,
+    }); // <-- GUARDA DNI y dateOfBirth
+
+    if (user) {
+      res.status(201).json({
+        _id: user._id,
+        username: user.username,
+        email: user.email, // <-- INCLUYE EL EMAIL EN LA RESPUESTA (opcional pero útil)
+        role: user.role,
+        token: generateToken(user._id),
+        message: "Registro exitoso.",
+      });
+    } else {
+      res.status(400).json({ message: "Datos de usuario inválidos." });
+    }
+  } catch (error) {
+    console.error("Error al registrar usuario:", error);
+    // Manejo específico para errores de unicidad de Mongoose (código 11000)
+    if (error.code === 11000) {
+      if (error.keyPattern && error.keyPattern.username) {
+        return res
+          .status(400)
+          .json({ message: "El nombre de usuario ya está en uso." });
+      }
+      if (error.keyPattern && error.keyPattern.email) {
+        return res
+          .status(400)
+          .json({ message: "El email ya está registrado." });
+      }
+    }
+    // Manejo para errores de validación de Mongoose (ej. formato de email)
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: `Error del servidor: ${error.message}` });
+  }
+});
+
+// Ruta de Inicio de Sesión (modificada para incluir DNI y dateOfBirth en la respuesta si lo deseas)
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Por favor, introduce email y contraseña." });
+  }
+
+  try {
+    const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
       res.json({
@@ -97,10 +111,10 @@ router.post('/login', async (req, res) => {
         dateOfBirth: user.dateOfBirth, // <-- INCLUYE FECHA EN LA RESPUESTA DE LOGIN
         role: user.role,
         token: generateToken(user._id),
-        message: 'Inicio de sesión exitoso.',
+        message: "Inicio de sesión exitoso.",
       });
     } else {
-      res.status(401).json({ message: 'Credenciales inválidas.' });
+      res.status(401).json({ message: "Credenciales inválidas." });
     }
   } catch (error) {
     res.status(500).json({ message: `Error del servidor: ${error.message}` });
@@ -110,11 +124,11 @@ router.post('/login', async (req, res) => {
 // ---------------------------------------------------
 // Ruta para solicitar el restablecimiento de contraseña
 // ---------------------------------------------------
-router.post('/forgot-password', async (req, res) => {
+router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ message: 'El email es requerido.' });
+    return res.status(400).json({ message: "El email es requerido." });
   }
 
   try {
@@ -124,14 +138,14 @@ router.post('/forgot-password', async (req, res) => {
       // Por seguridad, siempre responde con un mensaje genérico
       return res.status(200).json({
         message:
-          'Si el email está registrado, se enviará un enlace de restablecimiento de contraseña.',
+          "Si el email está registrado, se enviará un enlace de restablecimiento de contraseña.",
       });
     }
 
     // Generar un token único y seguro (usando JWT).
     // NOTA: Usa JWT_SECRET aquí.
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
+      expiresIn: "1h",
     });
 
     user.resetPasswordToken = resetToken;
@@ -143,7 +157,7 @@ router.post('/forgot-password', async (req, res) => {
     await transporter.sendMail({
       to: user.email,
       from: process.env.EMAIL_USER,
-      subject: 'Solicitud de Restablecimiento de Contraseña para MobiRent',
+      subject: "Solicitud de Restablecimiento de Contraseña para MobiRent",
       html: `
                 <p>Estimado/a ${user.username || user.email},</p>
                 <p>Hemos recibido una solicitud para restablecer la contraseña de su cuenta MobiRent.</p>
@@ -158,18 +172,18 @@ router.post('/forgot-password', async (req, res) => {
 
     res.status(200).json({
       message:
-        'Si el email está registrado, se ha enviado un enlace de restablecimiento de contraseña.',
+        "Si el email está registrado, se ha enviado un enlace de restablecimiento de contraseña.",
     });
   } catch (error) {
-    console.error('Error en /forgot-password:', error);
+    console.error("Error en /forgot-password:", error);
     res.status(500).json({
       message:
-        'Error interno del servidor al procesar la solicitud de recuperación de contraseña.',
+        "Error interno del servidor al procesar la solicitud de recuperación de contraseña.",
     });
   }
 });
 
-router.post('/reset-password/:token', async (req, res) => {
+router.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params; // Obtiene el token de los parámetros de la URL
   const { newPassword } = req.body; // Obtiene la nueva contraseña del cuerpo de la petición
 
@@ -177,7 +191,7 @@ router.post('/reset-password/:token', async (req, res) => {
   if (!newPassword || newPassword.length < 6) {
     // Ejemplo de validación mínima
     return res.status(400).json({
-      message: 'La nueva contraseña debe tener al menos 6 caracteres.',
+      message: "La nueva contraseña debe tener al menos 6 caracteres.",
     });
   }
 
@@ -197,7 +211,7 @@ router.post('/reset-password/:token', async (req, res) => {
     if (!user) {
       // Si el token no se encuentra o ha expirado, responde con un error
       return res.status(400).json({
-        message: 'El token de restablecimiento es inválido o ha expirado.',
+        message: "El token de restablecimiento es inválido o ha expirado.",
       });
     }
 
@@ -212,25 +226,25 @@ router.post('/reset-password/:token', async (req, res) => {
 
     res.status(200).json({
       message:
-        'Contraseña restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.',
+        "Contraseña restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.",
     });
   } catch (error) {
     // Manejo de errores específicos de JWT (ej. TokenExpiredError, JsonWebTokenError)
-    if (error.name === 'TokenExpiredError') {
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         message:
-          'El token de restablecimiento ha expirado. Por favor, solicita uno nuevo.',
+          "El token de restablecimiento ha expirado. Por favor, solicita uno nuevo.",
       });
     }
-    if (error.name === 'JsonWebTokenError') {
+    if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
         message:
-          'Token de restablecimiento inválido. Por favor, solicita uno nuevo.',
+          "Token de restablecimiento inválido. Por favor, solicita uno nuevo.",
       });
     }
-    console.error('Error en /reset-password/:token:', error); // Esto es para ver errores en la consola del backend
+    console.error("Error en /reset-password/:token:", error); // Esto es para ver errores en la consola del backend
     res.status(500).json({
-      message: 'Error interno del servidor al restablecer la contraseña.',
+      message: "Error interno del servidor al restablecer la contraseña.",
     });
   }
 });
