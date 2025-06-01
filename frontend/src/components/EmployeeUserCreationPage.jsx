@@ -6,8 +6,8 @@ function EmployeeUserCreationPage() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [dni, setDni] = useState(''); // <-- NUEVO ESTADO PARA DNI
-    const [dateOfBirth, setDateOfBirth] = useState(''); // <-- NUEVO ESTADO PARA FECHA DE NACIMIENTO
+    const [dni, setDni] = useState(''); 
+    const [dateOfBirth, setDateOfBirth] = useState(''); 
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
     const navigate = useNavigate();
@@ -18,7 +18,7 @@ function EmployeeUserCreationPage() {
         setMessageType('');
 
         // Validaciones básicas del frontend
-        if (!username || !email || !password || !dni || !dateOfBirth) { // <-- VALIDA TODOS LOS CAMPOS
+        if (!username || !email || !password || !dni || !dateOfBirth) { 
             setMessage('Todos los campos son obligatorios.');
             setMessageType('error');
             return;
@@ -57,9 +57,9 @@ function EmployeeUserCreationPage() {
                     username,
                     email,
                     password,
-                    dni,           // <-- ENVÍA DNI
-                    dateOfBirth,   // <-- ENVÍA FECHA DE NACIMIENTO
-                    role: 'user', // Por defecto, los empleados crean usuarios 'user'
+                    dni,           
+                    dateOfBirth,   
+                    role: 'user', 
                 }),
             });
 

@@ -114,7 +114,6 @@ const createVehicle = async (req, res) => {
 // @access  Admin, Employee
 const getAllVehicles = async (req, res) => {
     try {
-        // Añadimos .populate('branch') para obtener los detalles de la sucursal
         const vehicles = await Vehicle.find({}).populate('branch');
         res.status(200).json(vehicles);
     } catch (error) {
@@ -125,11 +124,33 @@ const getAllVehicles = async (req, res) => {
 
 // @desc    Obtener vehículos disponibles (para usuarios en general, en la página de inicio)
 // @route   GET /api/vehicles
-// @access  Authenticated Users (cualquier rol)
+// @access  Authenticated Users (cualquier rol) o sin autenticar
 const getAvailableVehicles = async (req, res) => {
     try {
+        // Obtenemos los parámetros de consulta relevantes
+        const { branchId, type } = req.query; // <--- AHORA OBTENEMOS branchId Y TYPE
+
+        let filter = {
+            isAvailable: true,
+            needsMaintenance: false,
+            isReserved: false
+        };
+
+        // Si se proporciona un branchId, agregarlo al filtro
+        if (branchId) {
+            filter.branch = branchId;
+        }
+
+        // Si se proporciona un tipo de vehículo, agregarlo al filtro
+        if (type) { // <--- NUEVA LÓGICA PARA EL FILTRO POR TIPO
+            filter.type = type;
+        }
+
+        // Las fechas (pickupDate, returnDate) se ignoran en el backend por ahora,
+        // aunque el frontend pueda enviarlas, no se usan para el filtro de la DB aquí.
+
         // Añadimos .populate('branch') para obtener los detalles de la sucursal
-        const vehicles = await Vehicle.find({ isAvailable: true, needsMaintenance: false, isReserved: false }).populate('branch');
+        const vehicles = await Vehicle.find(filter).populate('branch');
         res.status(200).json(vehicles);
     } catch (error) {
         console.error('Error al obtener vehículos disponibles:', error);

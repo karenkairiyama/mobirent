@@ -16,10 +16,6 @@ function ResetPassword() {
   const [initialCheckLoading, setInitialCheckLoading] = useState(true); // Para la carga inicial
 
   useEffect(() => {
-    // Opcional: Una comprobación inicial del token si quieres que la página
-    // cargue un mensaje de ervor si el token es inválido antes de que el usuario envíe.
-    // Por simplicidad, por ahora, el backend lo manejará al enviar el formulario.
-    // Si no quieres una llamada inicial, puedes eliminar este useEffect.
     if (!token) {
       setError("No se proporcionó un token de restablecimiento.");
       setInitialCheckLoading(false);

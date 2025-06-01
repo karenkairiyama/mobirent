@@ -1,22 +1,152 @@
+// frontend/src/components/Register.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Importa useNavigate para la redirección programática
+import styled from 'styled-components'; // Importa styled-components
+
+const RegisterPageContainer = styled.div`
+    // Fondo sin imagen, usando un gradiente similar al de Login
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(to right, #6a11cb 0%, #2575fc 100%); /* Gradiente azul/morado */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    padding-top: 60px; /* Ajusta este padding para dejar espacio al Navbar fijo */
+    box-sizing: border-box; /* Incluye padding en el total height */
+`;
+
+const RegisterFormWrapper = styled.div`
+    background-color: rgba(255, 255, 255, 0.95); /* Fondo casi blanco con ligera transparencia */
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); /* Sombra pronunciada */
+    text-align: center;
+    width: 100%;
+    max-width: 450px; /* Un poco más ancho para los campos adicionales */
+    z-index: 1;
+    overflow-y: auto; /* Permite scroll si el contenido es demasiado largo en pantallas pequeñas */
+    max-height: calc(100vh - 120px); /* Ajusta para que el formulario no exceda la altura de la pantalla */
+`;
+
+const Title = styled.h1`
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+`;
+
+const Form = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Espacio entre los grupos de formulario */
+`;
+
+const FormGroup = styled.div`
+    text-align: left;
+    margin-bottom: 5px; /* Menor margen para formularios más largos */
+`;
+
+const Label = styled.label`
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: bold;
+    font-size: 1.1em;
+`;
+
+const Input = styled.input`
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+
+    &:focus {
+        outline: none;
+        border-color: #007bff;
+    }
+`;
+
+const SubmitButton = styled.button`
+    background-color: #28a745; /* Verde para registrarse */
+    color: white;
+    padding: 15px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-top: 20px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+
+    &:hover {
+        background-color: #218838;
+        transform: translateY(-2px);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+`;
+
+const LinkText = styled.p`
+    margin-top: 25px;
+    font-size: 0.95em;
+    color: #666;
+
+    a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: bold;
+        transition: color 0.2s ease;
+
+        &:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+    }
+`;
+
+const Message = styled.p`
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+
+    &.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    &.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+`;
+
 
 function Register() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [dni, setDni] = useState(''); // <-- NUEVO ESTADO PARA DNI
-    const [dateOfBirth, setDateOfBirth] = useState(''); // <-- NUEVO ESTADO PARA FECHA DE NACIMIENTO
+    const [dni, setDni] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState('');
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
+    const navigate = useNavigate(); // Hook para la redirección
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
         setMessageType('');
 
-        // Validación de campos obligatorios (frontend)
-        if (!username || !email || !password || !confirmPassword || !dni || !dateOfBirth) { // <-- VALIDA TODOS LOS CAMPOS
+        if (!username || !email || !password || !confirmPassword || !dni || !dateOfBirth) {
             setMessage('Todos los campos son obligatorios.');
             setMessageType('error');
             return;
@@ -28,7 +158,6 @@ function Register() {
             return;
         }
 
-        // Validación de edad mínima (frontend, opcional pero buena práctica)
         const today = new Date();
         const dob = new Date(dateOfBirth);
         let age = today.getFullYear() - dob.getFullYear();
@@ -36,7 +165,7 @@ function Register() {
         if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
             age--;
         }
-        if (age < 18) { // Mismo límite de edad que en el backend
+        if (age < 18) {
             setMessage('Debes ser mayor de 18 años para registrarte.');
             setMessageType('error');
             return;
@@ -48,7 +177,7 @@ function Register() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, email, password, dni, dateOfBirth }), // <-- ENVÍA DNI y dateOfBirth
+                body: JSON.stringify({ username, email, password, dni, dateOfBirth }),
             });
 
             const data = await response.json();
@@ -61,10 +190,10 @@ function Register() {
                 setEmail('');
                 setPassword('');
                 setConfirmPassword('');
-                setDni('');           // Limpia el campo de DNI
-                setDateOfBirth('');   // Limpia el campo de fecha de nacimiento
+                setDni('');
+                setDateOfBirth('');
                 setTimeout(() => {
-                    window.location.href = '/login';
+                    navigate('/login'); // Redirige a la página de login usando navigate
                 }, 2000);
             } else {
                 setMessage(data.message || 'Error en el registro.');
@@ -78,84 +207,85 @@ function Register() {
     };
 
     return (
-        <div className="container">
-            <h1>Registrarse</h1>
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label htmlFor="regUsername">Usuario:</label>
-                    <input
-                        type="text"
-                        id="regUsername"
-                        name="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="regEmail">Email:</label>
-                    <input
-                        type="email"
-                        id="regEmail"
-                        name="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="regDni">DNI:</label> {/* <-- NUEVO CAMPO DE DNI */}
-                    <input
-                        type="text" // Usar type="text" para permitir validación de formato más flexible
-                        id="regDni"
-                        name="dni"
-                        value={dni}
-                        onChange={(e) => setDni(e.target.value)}
-                        required
-                        pattern="\d{7,9}" // Validación HTML5 para 7 a 9 dígitos numéricos
-                        title="El DNI debe contener entre 7 y 9 dígitos numéricos."
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="regDateOfBirth">Fecha de Nacimiento:</label> {/* <-- NUEVO CAMPO DE FECHA */}
-                    <input
-                        type="date" // Usa type="date" para el selector de fecha del navegador
-                        id="regDateOfBirth"
-                        name="dateOfBirth"
-                        value={dateOfBirth}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                        required
-                        // min="1900-01-01" // Opcional: limitar fecha mínima
-                        max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="regPassword">Contraseña:</label>
-                    <input
-                        type="password"
-                        id="regPassword"
-                        name="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="regConfirmPassword">Confirmar Contraseña:</label>
-                    <input
-                        type="password"
-                        id="regConfirmPassword"
-                        name="confirmPassword"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                <button type="submit">Registrar</button>
-            </form>
-            <p>¿Ya tienes una cuenta? <a href="/login">Inicia sesión aquí</a></p>
-            {message && <p className={`message ${messageType}`}>{message}</p>}
-        </div>
+        <RegisterPageContainer>
+            <RegisterFormWrapper>
+                <Title>Registrarse</Title>
+                <Form onSubmit={handleSubmit}>
+                    <FormGroup>
+                        <Label htmlFor="regUsername">Usuario:</Label>
+                        <Input
+                            type="text"
+                            id="regUsername"
+                            name="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="regEmail">Email:</Label>
+                        <Input
+                            type="email"
+                            id="regEmail"
+                            name="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="regDni">DNI:</Label>
+                        <Input
+                            type="text"
+                            id="regDni"
+                            name="dni"
+                            value={dni}
+                            onChange={(e) => setDni(e.target.value)}
+                            required
+                            pattern="\d{7,9}"
+                            title="El DNI debe contener entre 7 y 9 dígitos numéricos."
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="regDateOfBirth">Fecha de Nacimiento:</Label>
+                        <Input
+                            type="date"
+                            id="regDateOfBirth"
+                            name="dateOfBirth"
+                            value={dateOfBirth}
+                            onChange={(e) => setDateOfBirth(e.target.value)}
+                            required
+                            max={new Date().toISOString().split('T')[0]}
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="regPassword">Contraseña:</Label>
+                        <Input
+                            type="password"
+                            id="regPassword"
+                            name="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="regConfirmPassword">Confirmar Contraseña:</Label>
+                        <Input
+                            type="password"
+                            id="regConfirmPassword"
+                            name="confirmPassword"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <SubmitButton type="submit">Registrar</SubmitButton>
+                </Form>
+                <LinkText>¿Ya tienes una cuenta? <a href="/login">Inicia sesión aquí</a></LinkText>
+                {message && <Message className={messageType}>{message}</Message>}
+            </RegisterFormWrapper>
+        </RegisterPageContainer>
     );
 }
 

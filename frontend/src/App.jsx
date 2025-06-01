@@ -19,6 +19,7 @@ import EmployeeUserCreationPage from "./components/EmployeeUserCreationPage.jsx"
 import AdminVehicleCreationPage from "./components/AdminVehicleCreationPage.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import "./App.css";
+import Navbar from './components/Navbar';
 
 // Componente de Ruta Protegida 29/5 micha
 // **ESTA ES LA ÚNICA Y CORRECTA DECLARACIÓN DE ProtectedRoute**
@@ -60,6 +61,7 @@ function App() {
 
   return (
     <Router>
+      <Navbar />
       <AuthProvider>
         {/* Envuelve tus rutas con el AuthProvider */}
         <Routes>

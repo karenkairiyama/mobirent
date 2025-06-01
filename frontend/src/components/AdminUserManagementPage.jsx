@@ -1,5 +1,243 @@
-import React, { useState, useEffect } from 'react';
+// frontend/src/components/AdminUserManagementPage.jsx
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+
+
+const PageContainer = styled.div`
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    padding: 80px 20px 40px;
+    box-sizing: border-box;
+    color: #333;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: center; /* Centra el contenido si no hay sidebar */
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        padding-top: 20px;
+        align-items: center;
+    }
+`;
+
+const MainContent = styled.div`
+    flex-grow: 1;
+    max-width: 900px; /* Limita el ancho del contenido principal para que no se extienda demasiado */
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Centra el texto del título */
+
+    @media (max-width: 768px) {
+        padding: 15px;
+        margin-top: 20px;
+        width: 100%;
+    }
+`;
+
+const PageTitle = styled.h1`
+    font-size: 2.8em;
+    color: #007bff;
+    margin-bottom: 10px;
+    text-align: center;
+
+    @media (max-width: 768px) {
+        font-size: 2em;
+    }
+`;
+
+const PageSubText = styled.p`
+    font-size: 1.1em;
+    color: #555;
+    margin-bottom: 20px;
+    text-align: center;
+
+    @media (max-width: 768px) {
+        font-size: 0.9em;
+    }
+`;
+
+const StyledForm = styled.form`
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 30px;
+    margin-bottom: 40px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    text-align: left; /* Alinea los labels y inputs a la izquierda dentro del formulario */
+
+    h2 {
+        color: #007bff;
+        margin-bottom: 25px;
+        font-size: 2em;
+        text-align: center;
+    }
+`;
+
+const FormGroup = styled.div`
+    margin-bottom: 15px;
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #555;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"],
+    select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1em;
+        box-sizing: border-box; /* Incluye padding y border en el width */
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+
+        &:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+    }
+`;
+
+const SubmitButton = styled.button`
+    background-color: #28a745;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 20px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+
+    &:hover {
+        background-color: #218838;
+        transform: translateY(-2px);
+    }
+
+    &:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+`;
+
+const Message = styled.p`
+    margin-top: 20px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+
+    &.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    &.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+`;
+
+const UserListContainer = styled.div`
+    margin-top: 40px;
+    text-align: center; /* Centra el título de la lista */
+
+    h2 {
+        color: #007bff;
+        margin-bottom: 25px;
+        font-size: 2em;
+    }
+`;
+
+const UserGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Columnas responsivas */
+    gap: 20px;
+    margin-bottom: 30px;
+    padding: 0; /* Asegúrate de que no haya padding que cause desborde */
+    list-style: none; /* Elimina los puntos de la lista */
+`;
+
+const UserCard = styled.div`
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: left; /* Alinea el contenido de la tarjeta a la izquierda */
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    h3 {
+        font-size: 1.5em;
+        color: #333;
+        margin-bottom: 10px;
+        word-break: break-word; /* Rompe palabras largas */
+    }
+
+    p {
+        font-size: 0.95em;
+        color: #666;
+        margin-bottom: 5px;
+
+        strong {
+            color: #333;
+        }
+    }
+
+    .role-tag {
+        display: inline-block;
+        background-color: #007bff;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8em;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    /* Colores específicos para roles */
+    &.role-admin .role-tag { background-color: #dc3545; } /* Rojo */
+    &.role-employee .role-tag { background-color: #ffc107; color: #333; } /* Amarillo/Naranja (texto oscuro) */
+    &.role-user .role-tag { background-color: #17a2b8; } /* Azul cian */
+`;
+
+const BackButton = styled.button`
+    background-color: #6c757d;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-top: 30px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+
+    &:hover {
+        background-color: #5a6268;
+        transform: translateY(-2px);
+    }
+`;
+
 
 function AdminUserManagementPage() {
     const [username, setUsername] = useState('');
@@ -14,7 +252,7 @@ function AdminUserManagementPage() {
     const [users, setUsers] = useState([]); // Para listar usuarios
     const navigate = useNavigate();
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login');
@@ -31,7 +269,7 @@ function AdminUserManagementPage() {
             });
             const data = await response.json();
             if (response.ok) {
-                setUsers(data);
+                setUsers(data); // Mantiene la lógica original: setea todos los usuarios recibidos
             } else {
                 setMessage(data.message || 'Error al cargar usuarios.');
                 setMessageType('error');
@@ -41,19 +279,18 @@ function AdminUserManagementPage() {
             setMessage('Ocurrió un error de red o de servidor al cargar usuarios.');
             setMessageType('error');
         }
-    };
+    }, [navigate]);
 
     useEffect(() => {
-        fetchUsers(); // Carga los usuarios al montar el componente
-    }, []);
-
+        fetchUsers();
+    }, [fetchUsers]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
         setMessageType('');
 
-        if (!username || !email || !password || !confirmPassword || !dni || !dateOfBirth) { // <-- VALIDA TODOS LOS CAMPOS
+        if (!username || !email || !password || !confirmPassword || !dni || !dateOfBirth) {
             setMessage('Todos los campos son obligatorios.');
             setMessageType('error');
             return;
@@ -80,7 +317,7 @@ function AdminUserManagementPage() {
         if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
             age--;
         }
-        if (age < 18) { // Mismo límite de edad que en el backend
+        if (age < 18) {
             setMessage('Debes ser mayor de 18 años para registrarte.');
             setMessageType('error');
             return;
@@ -91,7 +328,7 @@ function AdminUserManagementPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`, // Envía el token de admin
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ username, email, password, dni, dateOfBirth, role }),
             });
@@ -101,12 +338,13 @@ function AdminUserManagementPage() {
             if (response.ok) {
                 setMessage(data.message || 'Usuario creado exitosamente.');
                 setMessageType('success');
+                // Limpiar campos del formulario
                 setUsername('');
                 setEmail('');
                 setPassword('');
                 setConfirmPassword('');
-                setDni('');           // Limpia el campo de DNI
-                setDateOfBirth(''); 
+                setDni('');
+                setDateOfBirth('');
                 setRole('employee'); // Resetear al rol por defecto
                 fetchUsers(); // Volver a cargar la lista de usuarios
             } else {
@@ -125,117 +363,124 @@ function AdminUserManagementPage() {
     };
 
     return (
-        <div className="container">
-            <h1>Gestión de Usuarios (Admin)</h1>
-            <p>Aquí puedes crear nuevos usuarios y asignarles roles.</p>
+        <PageContainer>
+            <MainContent>
+                <PageTitle>Gestión de Usuarios (Admin)</PageTitle>
+                <PageSubText>Aquí puedes crear nuevos usuarios y gestionar los existentes.</PageSubText>
 
-            <form onSubmit={handleSubmit} style={{ marginBottom: '30px', border: '1px solid #eee', padding: '20px', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-                <h2>Crear Nuevo Usuario</h2>
-                <div className="form-group">
-                    <label htmlFor="adminUsername">Usuario:</label>
-                    <input
-                        type="text"
-                        id="adminUsername"
-                        name="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="adminEmail">Email:</label>
-                    <input
-                        type="email"
-                        id="adminEmail"
-                        name="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="adminDni">DNI:</label> {/* <-- NUEVO CAMPO DE DNI */}
-                    <input
-                        type="text" // Usar type="text" para permitir validación de formato más flexible
-                        id="adminDni"
-                        name="dni"
-                        value={dni}
-                        onChange={(e) => setDni(e.target.value)}
-                        required
-                        pattern="\d{7,9}" // Validación HTML5 para 7 a 9 dígitos numéricos
-                        title="El DNI debe contener entre 7 y 9 dígitos numéricos."
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="adminDateOfBirth">Fecha de Nacimiento:</label> {/* <-- NUEVO CAMPO DE FECHA */}
-                    <input
-                        type="date" // Usa type="date" para el selector de fecha del navegador
-                        id="adminDateOfBirth"
-                        name="dateOfBirth"
-                        value={dateOfBirth}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                        required
-                        // min="1900-01-01" // Opcional: limitar fecha mínima
-                        max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="adminPassword">Contraseña:</label>
-                    <input
-                        type="password"
-                        id="adminPassword"
-                        name="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="adminConfirmPassword">Confirmar Contraseña:</label>
-                    <input
-                        type="password"
-                        id="adminConfirmPassword"
-                        name="confirmPassword"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="adminRole">Rol:</label>
-                    <select
-                        id="adminRole"
-                        name="role"
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
-                    >
-                        <option value="employee">Empleado</option>
-                        <option value="user">Usuario Normal</option>
-                        {/* No permitimos al admin crear otros admins desde esta interfaz por seguridad */}
-                    </select>
-                </div>
-                <button type="submit">Crear Usuario</button>
-                {message && <p className={`message ${messageType}`}>{message}</p>}
-            </form>
+                <StyledForm onSubmit={handleSubmit}>
+                    <h2>Crear Nuevo Usuario</h2>
+                    <FormGroup>
+                        <label htmlFor="adminUsername">Usuario:</label>
+                        <input
+                            type="text"
+                            id="adminUsername"
+                            name="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <label htmlFor="adminEmail">Email:</label>
+                        <input
+                            type="email"
+                            id="adminEmail"
+                            name="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <label htmlFor="adminDni">DNI:</label>
+                        <input
+                            type="text"
+                            id="adminDni"
+                            name="dni"
+                            value={dni}
+                            onChange={(e) => setDni(e.target.value)}
+                            required
+                            pattern="\d{7,9}"
+                            title="El DNI debe contener entre 7 y 9 dígitos numéricos."
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <label htmlFor="adminDateOfBirth">Fecha de Nacimiento:</label>
+                        <input
+                            type="date"
+                            id="adminDateOfBirth"
+                            name="dateOfBirth"
+                            value={dateOfBirth}
+                            onChange={(e) => setDateOfBirth(e.target.value)}
+                            required
+                            max={new Date().toISOString().split('T')[0]}
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <label htmlFor="adminPassword">Contraseña:</label>
+                        <input
+                            type="password"
+                            id="adminPassword"
+                            name="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <label htmlFor="adminConfirmPassword">Confirmar Contraseña:</label>
+                        <input
+                            type="password"
+                            id="adminConfirmPassword"
+                            name="confirmPassword"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <label htmlFor="adminRole">Rol:</label>
+                        <select
+                            id="adminRole"
+                            name="role"
+                            value={role}
+                            onChange={(e) => setRole(e.target.value)}
+                        >
+                            <option value="employee">Empleado</option>
+                            <option value="user">Usuario Normal</option>
+                            <option value="admin">Administrador</option> {/* solo por si necesitabamos crear admin, sino se borra esta linea listo */}
+                        </select>
+                    </FormGroup>
+                    <SubmitButton type="submit">Crear Usuario</SubmitButton>
+                    {message && <Message className={messageType}>{message}</Message>}
+                </StyledForm>
 
-            <h2>Usuarios Existentes</h2>
-            {users.length > 0 ? (
-                <ul style={{ listStyleType: 'none', padding: 0 }}>
-                    {users.map(user => (
-                        <li key={user._id} style={{ borderBottom: '1px solid #eee', padding: '10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span>{user.username} (Rol: {user.role})</span>
-                            {/* Aquí podrías añadir botones para editar o eliminar si implementas esas funcionalidades */}
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p>No hay usuarios registrados (aparte del admin).</p>
-            )}
+                <UserListContainer>
+                    <h2>Usuarios Existentes</h2>
+                    {users.length > 0 ? (
+                        <UserGrid>
+                            {users.map(user => (
+                                <UserCard key={user._id} className={`role-${user.role}`}>
+                                    <h3>{user.username}</h3>
+                                    <p>Email: <strong>{user.email}</strong></p>
+                                    <p>DNI: <strong>{user.dni}</strong></p>
+                                    <p>Nacimiento: <strong>{new Date(user.dateOfBirth).toLocaleDateString()}</strong></p>
+                                    <span className="role-tag">Rol: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
+                                    {/* Aquí podrías añadir botones para editar o eliminar si implementas esas funcionalidades */}
+                                </UserCard>
+                            ))}
+                        </UserGrid>
+                    ) : (
+                        <PageSubText>No hay usuarios registrados.</PageSubText>
+                    )}
+                </UserListContainer>
 
-            <button onClick={handleGoBack} style={{ marginTop: '30px' }}>
-                Volver a Home
-            </button>
-        </div>
+                <BackButton onClick={handleGoBack}>
+                    Volver a Home
+                </BackButton>
+            </MainContent>
+        </PageContainer>
     );
 }
 
