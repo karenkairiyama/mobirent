@@ -17,6 +17,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Función para generar un código 2FA de 6 dígitos
+const generateTwoFactorCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // Genera un número de 6 dígitos
+};
+
 // Ruta de Registro de Usuario
 router.post("/register", async (req, res) => {
   const { username, email, password, dni, dateOfBirth } = req.body; // <-- RECIBE DNI y dateOfBirth
@@ -89,8 +94,70 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Ruta de Inicio de Sesión (modificada para incluir DNI y dateOfBirth en la respuesta si lo deseas)
+// ---------------------------------------------------
+// NUEVA RUTA: Verificación de Doble Factor (2FA)
+// ---------------------------------------------------
+router.post("/verify-2fa", async (req, res) => {
+  const { email, code } = req.body; // Recibe el email del admin y el código ingresado
+  if (!email || !code) {
+    return res
+      .status(400)
+      .json({ message: "Email y código son obligatorios." });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+
+    // 1. Verificar que el usuario exista y sea admin
+    if (!user || user.role !== "admin") {
+      return res
+        .status(401)
+        .json({ message: "Acceso no autorizado para este usuario." });
+    }
+
+    // 2. Verificar el código y su expiración
+    if (user.twoFactorCode !== code || user.twoFactorCodeExpires < Date.now()) {
+      // Opcional: Limpiar el código si el intento fue fallido para evitar reintentos con el mismo código expirado
+      // user.twoFactorCode = undefined;
+      // user.twoFactorCodeExpires = undefined;
+      // await user.save();
+      return res.status(400).json({
+        message:
+          "Código de verificación inválido o expirado. Por favor, reintenta.",
+      });
+    }
+
+    // 3. Si el código es válido, limpiar los campos 2FA del usuario
+    user.twoFactorCode = undefined;
+    user.twoFactorCodeExpires = undefined;
+    await user.save(); // Guarda los cambios en la base de datos
+
+    // 4. Generar el token JWT FINAL para el administrador
+    const token = generateToken(user._id);
+
+    // 5. Enviar el token y la información del usuario al frontend
+    res.status(200).json({
+      message:
+        "Verificación de dos factores exitosa. Inicio de sesión completado.",
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      dni: user.dni,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      token: token, // ¡Este es el token final para el frontend!
+    });
+  } catch (error) {
+    console.error("Error en /verify-2fa:", error);
+    res.status(500).json({
+      message: "Error interno del servidor durante la verificación 2FA.",
+    });
+  }
+});
+
+// Ruta de Login de Usuario. Agregue la funcion de verificacion 2FA
 router.post("/login", async (req, res) => {
+  console.log("!!! Petición recibida en /api/auth/login !!!"); // <-- AÑADE ESTA LÍNEA
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -102,22 +169,67 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    if (user && (await user.matchPassword(password))) {
-      res.json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        dni: user.dni, // <-- INCLUYE DNI EN LA RESPUESTA DE LOGIN
-        dateOfBirth: user.dateOfBirth, // <-- INCLUYE FECHA EN LA RESPUESTA DE LOGIN
-        role: user.role,
-        token: generateToken(user._id),
-        message: "Inicio de sesión exitoso.",
-      });
-    } else {
-      res.status(401).json({ message: "Credenciales inválidas." });
+    if (!user) {
+      // Primero verifica si el usuario existe
+      return res.status(400).json({ message: "Credenciales inválidas." });
     }
+
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      // Luego verifica la contraseña
+      return res.status(400).json({ message: "Credenciales inválidas." });
+    }
+
+    // --- Lógica 2FA para Admin ---
+    if (user.role === "admin") {
+      const twoFactorCode = generateTwoFactorCode(); // Asegúrate de tener esta función definida
+      const twoFactorExpires = new Date(Date.now() + 10 * 60 * 1000); // Código válido por 10 minutos
+
+      user.twoFactorCode = twoFactorCode;
+      user.twoFactorExpires = twoFactorExpires;
+      await user.save();
+
+      // Envío del email con el código 2FA
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Código de Verificación para Mobirent (Inicio de Sesión)",
+        html: `
+            <h1>Código de Verificación para Mobirent</h1>
+            <p>Tu código de verificación para iniciar sesión como administrador es: <strong>${twoFactorCode}</strong></p>
+            <p>Este código es válido por 10 minutos.</p>
+            <p>Si no solicitaste esto, por favor ignora este email.</p>
+            <p>Atentamente, <br/>El equipo de Mobirent</p>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      // Respuesta al frontend indicando que se requiere 2FA
+      return res.status(200).json({
+        requiresTwoFactor: true,
+        message: "Código de verificación enviado a tu email.",
+        email: user.email, // Enviar el email es útil para el frontend
+      });
+    }
+    // --- Fin Lógica 2FA ---
+
+    // Si el usuario no es 'admin' o si ya pasó la verificación 2FA,
+    // se envía el token JWT y los datos del usuario.
+    res.json({
+      message: "Inicio de sesión exitoso.",
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      dni: user.dni,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      token: generateToken(user._id),
+    });
   } catch (error) {
-    res.status(500).json({ message: `Error del servidor: ${error.message}` });
+    console.error("Error en /login:", error); // Imprime el error completo en la consola del servidor
+    res.status(500).json({ message: "Error interno del servidor." }); // Mensaje genérico para el cliente
   }
 });
 

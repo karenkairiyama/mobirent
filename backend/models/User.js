@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
@@ -9,26 +9,31 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
-    email: { 
+    email: {
       type: String,
       required: true,
       unique: true,
       trim: true,
       lowercase: true,
-      match: [/.+@.+\..+/, 'Por favor, introduce un email válido']
+      match: [/.+@.+\..+/, "Por favor, introduce un email válido"],
     },
     password: {
       type: String,
       required: true,
     },
-    dni: { // <-- NUEVO CAMPO PARA EL DNI
+    dni: {
+      // <-- NUEVO CAMPO PARA EL DNI
       type: String,
       required: true,
       unique: true, // ¡Importante! Asegura que el DNI sea único
       trim: true,
-      match: [/^\d{7,9}$/, 'El DNI debe contener entre 7 y 9 dígitos numéricos.'] // Validación básica de formato DNI
+      match: [
+        /^\d{7,9}$/,
+        "El DNI debe contener entre 7 y 9 dígitos numéricos.",
+      ], // Validación básica de formato DNI
     },
-    dateOfBirth: { // <-- NUEVO CAMPO PARA FECHA DE NACIMIENTO
+    dateOfBirth: {
+      // <-- NUEVO CAMPO PARA FECHA DE NACIMIENTO
       type: Date, // Tipo Date para almacenar fechas
       required: true,
     },
@@ -44,9 +49,20 @@ const userSchema = new mongoose.Schema(
     // --- Fin de campos para recuperación de contraseña ---
     role: {
       type: String,
-      enum: ['user', 'employee', 'admin'],
-      default: 'user',
+      enum: ["user", "employee", "admin"],
+      default: "user",
     },
+
+    // --- NUEVOS CAMPOS PARA 2FA ---
+    twoFactorCode: {
+      type: String,
+      default: null,
+    },
+    twoFactorExpires: {
+      type: Date,
+      default: null,
+    },
+    // --- FIN NUEVOS CAMPOS ---
   },
   {
     timestamps: true,
@@ -54,8 +70,9 @@ const userSchema = new mongoose.Schema(
 );
 
 // Middleware para encriptar la contraseña antes de guardar
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password") && !this.isNew) {
+    // 01-06 !this.isNew para no hashear si es un documento nuevo sin password modificado
     return next();
   }
   const salt = await bcrypt.genSalt(10);
@@ -68,6 +85,6 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 module.exports = User;
