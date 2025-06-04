@@ -2,7 +2,8 @@
 
 const Vehicle = require('../models/Vehicle');
 const Branch = require('../models/Branch'); // Importa el modelo Branch
-
+const asyncHandler = require('../middleware/asyncHandler');
+const ErrorResponse = require('../utils/errorResponse');
 // @desc    Crear un nuevo vehículo (solo para admin)
 // @route   POST /api/vehicles
 // @access  Admin
@@ -239,6 +240,19 @@ const removeVehicle = (req, res) => { res.status(501).json({ message: 'Not Imple
 const getVehicles = (req, res) => { res.status(501).json({ message: 'Not Implemented' }); };
 const getReports = (req, res) => { res.status(501).json({ message: 'Not Implemented' }); };
 
+const getVehicleById = asyncHandler(async (req, res, next) => {
+    const vehicle = await Vehicle.findById(req.params.id).populate('branch'); // .populate('branch') para obtener los detalles de la sucursal
+
+    if (!vehicle) {
+        return next(new ErrorResponse(`No se encontró vehículo con el ID de ${req.params.id}`, 404));
+    }
+
+    res.status(200).json({
+        success: true,
+        data: vehicle
+    });
+});
+
 module.exports = {
     createVehicle,
     getAllVehicles,
@@ -247,5 +261,6 @@ module.exports = {
     addVehicle,
     removeVehicle,
     getVehicles,
-    getReports
+    getReports,
+    getVehicleById
 };

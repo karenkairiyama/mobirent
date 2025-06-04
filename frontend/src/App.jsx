@@ -1,3 +1,5 @@
+// src/App.jsx
+
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -11,7 +13,7 @@ import Register from "./components/Register.jsx";
 import Home from "./components/Home.jsx";
 import LandingPage from "./components/LandingPage.jsx";
 import ForgotPassword from "./components/ForgotPassword.jsx";
-//import ProtectedRoute from "./components/ProtectedRoute.jsx";
+//import ProtectedRoute from "./components/ProtectedRoute.jsx"; // Puedes eliminar esta línea si no la usas en otro lugar directamente.
 import VehicleManagementPage from "./components/VehicleManagementPage.jsx";
 import AdminReportsPage from "./components/AdminReportsPage.jsx";
 import AdminUserManagementPage from "./components/AdminUserManagementPage.jsx";
@@ -20,6 +22,9 @@ import AdminVehicleCreationPage from "./components/AdminVehicleCreationPage.jsx"
 import ResetPassword from "./components/ResetPassword.jsx";
 import "./App.css";
 import Navbar from "./components/Navbar";
+
+// AQUI DEBES AGREGAR LA IMPORTACIÓN DE CreateReservationPage
+import CreateReservationPage from './components/CreateReservationPage.jsx'; // <--- ¡IMPORTA ESTO AQUÍ!
 
 // Componente de Ruta Protegida 29/5 micha
 // **ESTA ES LA ÚNICA Y CORRECTA DECLARACIÓN DE ProtectedRoute**
@@ -61,14 +66,14 @@ function App() {
 
   return (
     <Router>
-      <Navbar />
-      <AuthProvider>
-        {/* Envuelve tus rutas con el AuthProvider */}
+      {/* El Navbar DEBE ESTAR DENTRO DEL AuthProvider para que pueda usar useAuth si lo necesita. */}
+      {/* Si tu Navbar no necesita useAuth, puede quedarse fuera, pero es más común que sí lo use (ej. para mostrar el nombre de usuario o botón de logout) */}
+      <AuthProvider> {/* <-- El AuthProvider debería envolver todo lo que lo necesita, incluyendo el Navbar si este último lo utiliza */}
+        <Navbar /> {/* <--- Navbar movido dentro del AuthProvider */}
         <Routes>
           {/* Rutas Públicas */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          {/* La ruta de reset-password NO DEBE ESTAR PROTEGIDA */}
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/home" element={<Home />} />
 
@@ -85,13 +90,24 @@ function App() {
             path="/register"
             element={
               <RequireAuthNotLoggedIn>
-                {" "}
-                <Register />{" "}
+                <Register />
               </RequireAuthNotLoggedIn>
             }
           />
 
           {/* Rutas Protegidas que requieren autenticación */}
+          {/* Aquí puedes agrupar todas las rutas que usen AppProtectedRoute */}
+          
+          {/* RUTA PARA CREAR UNA RESERVA */}
+          <Route
+            path="/create-reservation" // <--- ¡NUEVA RUTA!
+            element={
+              <AppProtectedRoute allowedRoles={["user", "employee", "admin"]}> {/* Permite a usuarios, empleados y admins crear reservas */}
+                <CreateReservationPage />
+              </AppProtectedRoute>
+            }
+          />
+
           <Route
             path="/vehicles-management"
             element={

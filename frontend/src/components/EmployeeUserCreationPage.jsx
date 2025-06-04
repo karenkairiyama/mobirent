@@ -1,6 +1,8 @@
-// frontend/src/components/EmployeeUserCreationPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- LÍNEA AÑADIDA
 
 function EmployeeUserCreationPage() {
     const [username, setUsername] = useState('');
@@ -47,7 +49,8 @@ function EmployeeUserCreationPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/admin/create-user', { // Ruta para crear usuarios (empleado/admin)
+            // MODIFICACIÓN: Usamos la variable de entorno para la URL
+            const response = await fetch(`${API_BASE_URL}/admin/create-user`, { // Ruta para crear usuarios (empleado/admin)
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

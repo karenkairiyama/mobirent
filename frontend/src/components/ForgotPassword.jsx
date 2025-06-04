@@ -1,8 +1,9 @@
-// frontend/src/pages/ForgotPassword.jsx
-
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom'; // Para enlaces a otras páginas como login
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- LÍNEA AÑADIDA
 
 function ForgotPassword() {
     const [email, setEmail] = useState('');
@@ -17,8 +18,8 @@ function ForgotPassword() {
         setLoading(true); // Activar estado de carga
 
         try {
-            // Asegúrate de que la URL apunte a tu backend de Node.js
-            const response = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+            // MODIFICACIÓN: Usamos la variable de entorno para la URL
+            const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, { email });
             setMessage(response.data.message); // Muestra el mensaje del backend
             setEmail(''); // Limpiar el campo del email
         } catch (err) {

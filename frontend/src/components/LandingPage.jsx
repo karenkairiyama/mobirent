@@ -1,8 +1,10 @@
-// frontend/src/components/LandingPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import background from '../assets/landing-background.jpg'; // Asegúrate de tener esta imagen en tu carpeta assets
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- LÍNEA AÑADIDA
 
 // Styled Components
 const LandingContainer = styled.div`
@@ -127,7 +129,7 @@ function LandingPage() {
         const fetchBranches = async () => {
             try {
                 // No se requiere token para obtener las sucursales en la LandingPage
-                const response = await fetch('http://localhost:5000/api/branches');
+                const response = await fetch(`${API_BASE_URL}/branches`); // <--- LÍNEA MODIFICADA
                 const data = await response.json();
                 if (response.ok) {
                     setBranches(data);

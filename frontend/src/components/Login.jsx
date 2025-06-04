@@ -1,9 +1,11 @@
-// frontend/src/components/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Importa useNavigate para la redirección programática
 import styled from "styled-components";
 import { useAuth } from "../context/AuthContext.jsx"; // Importa useAuth
 // Ya no necesitamos importar loginBackground
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- Ya estaba, ¡bien!
 
 // Styled Components
 const LoginPageContainer = styled.div`
@@ -175,8 +177,8 @@ function Login() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        // Ajusta la URL si es diferente
+      // LÍNEA MODIFICADA
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -238,10 +240,10 @@ function Login() {
     }
 
     try {
+      // LÍNEA MODIFICADA
       const response = await fetch(
-        "http://localhost:5000/api/auth/verify-2fa",
+        `${API_BASE_URL}/auth/verify-2fa`,
         {
-          // Ajusta la URL si es diferente
           method: "POST",
           headers: {
             "Content-Type": "application/json",

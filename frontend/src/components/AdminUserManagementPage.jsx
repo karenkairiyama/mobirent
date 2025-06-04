@@ -1,7 +1,9 @@
-// frontend/src/components/AdminUserManagementPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- LÍNEA AÑADIDA
 
 
 const PageContainer = styled.div`
@@ -260,7 +262,8 @@ function AdminUserManagementPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/admin/users', {
+            // MODIFICACIÓN: Usamos la variable de entorno para la URL
+            const response = await fetch(`${API_BASE_URL}/admin/users`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -324,7 +327,8 @@ function AdminUserManagementPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/admin/users', {
+            // MODIFICACIÓN: Usamos la variable de entorno para la URL
+            const response = await fetch(`${API_BASE_URL}/admin/users`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,8 +1,16 @@
+// backend/middleware/authMiddleware.js
+
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // Importamos el modelo de usuario
+const asyncHandler = require('express-async-handler');
+const User = require("../models/User");
+
+// *** AGREGAR ESTAS LÍNEAS PARA DEPURAR ***
+console.log('authMiddleware: Tipo de jwt:', typeof jwt);
+console.log('authMiddleware: Valor de User:', User); // Debería ser un modelo de Mongoose
+// *****************************************
 
 // Middleware de protección: Verifica si el usuario está autenticado con un token válido
-const protect = async (req, res, next) => {
+const protect = asyncHandler(async (req, res, next) => { // <--- THE FIX IS HERE!
   let token;
 
   // Comprueba si el encabezado de autorización existe y empieza con 'Bearer'
@@ -41,7 +49,7 @@ const protect = async (req, res, next) => {
   if (!token) {
     res.status(401).json({ message: "No autorizado, no hay token" });
   }
-};
+}); // <--- Make sure this closing parenthesis is here!
 
 // Middleware de autorización: Verifica si el usuario autenticado tiene el rol requerido
 const authorize = (...roles) => {
@@ -58,4 +66,7 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+module.exports = {
+  protect,
+  authorize,
+};

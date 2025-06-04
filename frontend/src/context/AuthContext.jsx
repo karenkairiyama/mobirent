@@ -57,6 +57,10 @@ export const AuthProvider = ({ children }) => {
     // window.location.reload(); // Opcional: Si persisten problemas, forzar recarga
   };
 
+    const getAuthToken = useCallback(() => {
+    return localStorage.getItem("token");
+  }, []);
+
   // El valor que provee el contexto
   const authContextValue = {
     isAuthenticated,
@@ -65,6 +69,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     // Recargar el estado si es necesario
     refreshAuthState: loadAuthState,
+    getAuthToken, // <-- ¡AÑADE getAuthToken AQUÍ PARA EXPORTARLA!
   };
 
   return (

@@ -1,8 +1,11 @@
-// frontend/src/components/Home.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; 
 import styled from "styled-components";
 import { useAuth } from "../context/AuthContext.jsx";
+
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- LÍNEA AÑADIDA
 
 
 const HomePageContainer = styled.div`
@@ -403,6 +406,7 @@ function Home() {
     const [vehicles, setVehicles] = useState([]);
     const [branches, setBranches] = useState([]); 
     const location = useLocation();
+    const navigate = useNavigate();
 
     
     const [selectedBranch, setSelectedBranch] = useState('');
@@ -429,7 +433,8 @@ function Home() {
     useEffect(() => {
         const fetchBranches = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/branches');
+                // MODIFICACIÓN: Usamos la variable de entorno
+                const response = await fetch(`${API_BASE_URL}/branches`);
                 const data = await response.json();
                 if (response.ok) {
                     setBranches(data);
@@ -461,7 +466,8 @@ function Home() {
             }
 
             const query = new URLSearchParams(filters).toString();
-            const url = `http://localhost:5000/api/vehicles${query ? `?${query}` : ''}`;
+            // MODIFICACIÓN: Usamos la variable de entorno para la URL
+            const url = `${API_BASE_URL}/vehicles${query ? `?${query}` : ''}`;
 
             const response = await fetch(url, {
                 method: "GET",
@@ -688,8 +694,17 @@ function Home() {
                                     {/* SECCIÓN DE PRECIO Y BOTÓN (A la derecha) */}
                                     <VehicleRentInfo>
                                         <VehiclePrice>Alquiler por Día: <span>${vehicle.pricePerDay.toFixed(2)}</span></VehiclePrice>
-                                        <RentButtonStyled>
-                                            RESERVAR
+                                        <RentButtonStyled onClick={() => {
+                                            // Redirige a la página de creación de reserva con el ID del vehículo y otros filtros si existen
+                                            const params = new URLSearchParams();
+                                            params.append('vehicleId', vehicle._id);
+                                            if (selectedBranch) params.append('pickupBranchId', selectedBranch); // Pasar la sucursal de retiro ya seleccionada
+                                            if (pickupDate) params.append('pickupDate', pickupDate);
+                                            if (returnDate) params.append('returnDate', returnDate);
+
+                                            navigate(`/create-reservation?${params.toString()}`); // NUEVA RUTA
+                                        }}>
+                                            Reservar
                                         </RentButtonStyled>
                                     </VehicleRentInfo>
                                 </VehicleDetails>

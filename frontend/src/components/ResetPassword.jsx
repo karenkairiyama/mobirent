@@ -1,8 +1,9 @@
-// frontend/src/pages/ResetPassword.jsx
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- LÍNEA AÑADIDA
 
 function ResetPassword() {
   const { token } = useParams(); // Obtiene el token de la URL
@@ -50,7 +51,7 @@ function ResetPassword() {
     try {
       // Envía la nueva contraseña y el token al backend
       const response = await axios.post(
-        `http://localhost:5000/api/auth/reset-password/${token}`,
+        `${API_BASE_URL}/auth/reset-password/${token}`, // <--- LÍNEA MODIFICADA
         { newPassword }
       );
       setMessage(response.data.message);

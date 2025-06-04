@@ -1,7 +1,9 @@
-// frontend/src/components/Register.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Importa useNavigate para la redirección programática
 import styled from 'styled-components'; // Importa styled-components
+
+// Definimos la URL base de la API usando la variable de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- Ya estaba, ¡bien!
 
 const RegisterPageContainer = styled.div`
     // Fondo sin imagen, usando un gradiente similar al de Login
@@ -172,7 +174,8 @@ function Register() {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/register', {
+            // LÍNEA MODIFICADA: Ahora usa el template literal con las comillas invertidas (backticks)
+            const response = await fetch(`${API_BASE_URL}/auth/register`, { // <--- MODIFICACIÓN AQUÍ
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

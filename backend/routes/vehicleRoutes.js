@@ -8,13 +8,19 @@ const {
     getAllVehicles,
     getAvailableVehicles,
     updateVehicleStatus,
-    getReports
+    getReports,
+    getVehicleById // <-- ¡ASEGÚRATE DE QUE NO HAYA UN COMENTARIO EN ESTA LÍNEA!
 } = require('../controllers/vehicleController');
+
 
 
 // --- Rutas de Vehículos Accesibles por CUALQUIER usuario (incluso no logueados) ---
 router.get('/', getAvailableVehicles);
 
+// --- NUEVA RUTA: Obtener un vehículo por ID ---
+// Esta ruta debería ser accesible por usuarios logueados de cualquier rol
+// para que puedan ver los detalles del vehículo antes de reservar.
+router.get('/:id', protect, authorize('user', 'employee', 'admin'), getVehicleById); 
 
 // --- Rutas de Gestión de Vehículos (Requieren autenticación y roles específicos) ---
 
