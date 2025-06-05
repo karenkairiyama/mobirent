@@ -8,6 +8,7 @@ const vehicleRoutes = require('./routes/vehicleRoutes');
 const adminRoutes = require('./routes/adminRoutes'); // <-- NUEVO: Importa las rutas de admin
 const branchRoutes = require('./routes/branchRoutes'); // Añade esta línea
 const reservationRoutes = require('./routes/reservationRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const app = express();
 
 app.use(cors());
@@ -23,7 +24,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/branches', branchRoutes); 
 app.use('/api/admin', adminRoutes); // <-- NUEVO: Para la gestión de admin
 app.use('/api/reservations', reservationRoutes); // <-- ESTO ES CLAVE
-
+app.use('/api/payments', paymentRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {

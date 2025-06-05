@@ -4,48 +4,48 @@ const asyncHandler = require('express-async-handler');
 const Reservation = require('../models/Reservation');
 const Vehicle = require('../models/Vehicle');
 const Branch = require('../models/Branch');
-const User = require('../models/User'); // Asegúrate de que esta línea esté presente.
-const sendEmail = require('../utils/sendEmail'); // Necesitaremos esta utilidad.
-const fakePaymentService = require('../services/fakePaymentService'); // Nuevo servicio.
+const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
+const fakePaymentService = require('../services/fakePaymentService');
 
-// Helper para calcular el costo total (puedes ajustar la lógica)
+// Helper para calcular el costo total
 const calculateTotalCost = (startDate, endDate, vehiclePricePerDay) => {
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays * vehiclePricePerDay
+  return diffDays * vehiclePricePerDay;
 };
 
 /**
- * @desc Create a new reservation and process payment
- * @route POST /api/reservations
+ * @desc   Crear una nueva reserva en ESTADO PENDING (sin procesar pago)
+ * @route  POST /api/reservations
  * @access Private (User)
  */
 const createReservation = asyncHandler(async (req, res) => {
-  // Regla 1: Requiere que el cliente haya iniciado sesión (Manejado por el middleware 'protect')
-  const { vehicleId, pickupBranchId, returnBranchId, startDate, endDate, paymentData } = req.body;
+  const { vehicleId, pickupBranchId, returnBranchId, startDate, endDate } = req.body;
 
-  // 1. Validar campos obligatorios
-  if (!vehicleId || !pickupBranchId || !returnBranchId || !startDate || !endDate || !paymentData) {
+  // 1) Validar campos obligatorios
+  if (!vehicleId || !pickupBranchId || !returnBranchId || !startDate || !endDate) {
     res.status(400);
-    throw new Error('Todos los campos de la reserva (vehículo, sucursales, fechas) y datos de pago son obligatorios.');
+    throw new Error('Faltan datos obligatorios: vehículo, sucursales y fechas.');
   }
 
   const parsedStartDate = new Date(startDate);
+  parsedStartDate.setHours(0, 0, 0, 0);
   const parsedEndDate = new Date(endDate);
+  parsedEndDate.setHours(0, 0, 0, 0);
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Establecer a inicio del día para comparación
+  today.setHours(0, 0, 0, 0);
 
-  // Regla 1: Selección de fechas válidas
   if (parsedStartDate < today) {
     res.status(400);
-    throw new Error('La fecha de inicio de la reserva no puede ser anterior a hoy.');
+    throw new Error('La fecha de inicio no puede ser anterior a hoy.');
   }
   if (parsedStartDate >= parsedEndDate) {
     res.status(400);
     throw new Error('La fecha de fin debe ser posterior a la fecha de inicio.');
   }
 
-  // 2. Verificar existencia y estado del vehículo y sucursales
+  // 2) Verificar existencia y estado de vehículo y sucursales
   const vehicle = await Vehicle.findById(vehicleId);
   if (!vehicle) {
     res.status(404);
@@ -56,172 +56,242 @@ const createReservation = asyncHandler(async (req, res) => {
   const returnBranch = await Branch.findById(returnBranchId);
   if (!pickupBranch || !returnBranch) {
     res.status(404);
-    throw new Error('Una o ambas sucursales no encontradas.');
+    throw new Error('Sucursal de retiro o devolución no encontrada.');
   }
 
-  // Regla 2: Disponibilidad - no esté marcado En mantenimiento
-  if (vehicle.status === 'En mantenimiento') { // Asumiendo un campo 'status' en el modelo Vehicle
-    // Escenario 3: Vehículo ya no disponible
-    res.status(400); // 400 Bad Request porque el cliente intentó reservar un vehículo no disponible
-    throw new Error('Vehículo no disponible para reserva (en mantenimiento). Por favor, seleccione otro.');
+  // 3) Verificar disponibilidad del vehículo
+  if (vehicle.needsMaintenance) {
+    res.status(400);
+    throw new Error('Vehículo en mantenimiento. Elige otro.');
+  }
+  if (!vehicle.isAvailable || vehicle.isReserved) {
+    res.status(400);
+    throw new Error('Vehículo no disponible o ya reservado.');
   }
 
-  // Regla 2: Disponibilidad - no esté ya reservado en el mismo período.
-  // Buscar reservas existentes para este vehículo que se superpongan con el período solicitado
+  // 4) Revisar reservas superpuestas
   const overlappingReservations = await Reservation.find({
     vehicle: vehicleId,
-    status: { $in: ['pending', 'confirmed', 'picked_up'] }, // Considerar estados que bloquean la disponibilidad
+    status: { $in: ['pending', 'confirmed', 'picked_up'] },
     $or: [
-      { startDate: { $lt: parsedEndDate, $gte: parsedStartDate } }, // inicio dentro del período solicitado
-      { endDate: { $gt: parsedStartDate, $lte: parsedEndDate } },   // fin dentro del período solicitado
-      { startDate: { $lte: parsedStartDate }, endDate: { $gte: parsedEndDate } } // período solicitado dentro de una reserva existente
+      { startDate: { $lt: parsedEndDate, $gte: parsedStartDate } },
+      { endDate: { $gt: parsedStartDate, $lte: parsedEndDate } },
+      { startDate: { $lte: parsedStartDate }, endDate: { $gte: parsedEndDate } }
     ]
   });
-
   if (overlappingReservations.length > 0) {
-    // Escenario 3: Vehículo ya no disponible
     res.status(400);
-    throw new Error('Vehículo no disponible en las fechas seleccionadas. Ya tiene una reserva superpuesta.');
+    throw new Error('Ya existe una reserva superpuesta para ese vehículo y fechas.');
   }
 
-  // 3. Calcular el costo total (asumiendo que vehicle tiene dailyRentalRate)
+  // 5) Calcular costo total
   const totalCost = calculateTotalCost(parsedStartDate, parsedEndDate, vehicle.pricePerDay);
   if (totalCost <= 0) {
     res.status(400);
-    throw new Error('El costo total de la reserva debe ser un valor positivo.');
+    throw new Error('El costo total debe ser positivo.');
   }
 
-  // 4. Procesar el pago (simulado)
-  const paymentResult = await fakePaymentService.processPayment(paymentData, totalCost);
-
-  if (paymentResult.status === 'rejected') {
-    // Escenario 4: Pago rechazado
-    res.status(400); // 400 Bad Request por fallo en la lógica de negocio (pago)
-    throw new Error('Pago no aprobado, intente nuevamente.');
-  }
-
-  // 5. Crear la reserva en la base de datos
-  const reservation = await Reservation.create({
+  // 6) Crear la reserva en estado "pending"
+  const newReservation = await Reservation.create({
     user: req.user._id,
     vehicle: vehicleId,
     pickupBranch: pickupBranchId,
     returnBranch: returnBranchId,
     startDate: parsedStartDate,
     endDate: parsedEndDate,
-    totalCost: totalCost,
-    status: 'confirmed', // Escenario 1a: Crea la reserva en estado Pagada (mapeado a 'confirmed')
+    totalCost,
+    status: 'pending',
     paymentInfo: {
-      transactionId: paymentResult.transactionId,
-      method: paymentData.method,
-      status: paymentResult.status,
+      transactionId: null,
+      method: null,
+      status: null
     },
+    reservationNumber: null // el hook pre('save') lo genera automáticamente
   });
 
-  // 6. Actualizar el estado del vehículo (Regla 2b): Marcar como no disponible para esas fechas.
-  // (Nota: el campo 'status' en Vehicle es para mantenimiento. La disponibilidad en un rango de fechas
-  // se maneja con la lógica de superposición de reservas que ya implementamos arriba.)
-  // Si tu modelo Vehicle tiene un campo para "disponible" que se cambia por reserva, sería aquí.
-  // Por ahora, la Regla 2b se satisface con la verificación de 'overlappingReservations'.
-
-  // 7. Enviar voucher por email (Escenario 1c y 1d)
-  const userEmail = req.user.email; // El email del usuario logueado
-  const userName = req.user.name; // Asume que req.user.name está disponible del token o base de datos
-  const voucherContent = `
-    <h1>Confirmación de Reserva Mobirent</h1>
-    <p>Hola ${userName},</p>
-    <p>Tu reserva ha sido confirmada exitosamente. Aquí están los detalles:</p>
-    <ul>
-      <li><strong>Número de Reserva:</strong> ${reservation.reservationNumber}</li>
-      <li><strong>Vehículo:</strong> ${vehicle.make} ${vehicle.model} (${vehicle.licensePlate})</li>
-      <li><strong>Fechas:</strong> ${parsedStartDate.toLocaleDateString('es-AR')} - ${parsedEndDate.toLocaleDateString('es-AR')}</li>
-      <li><strong>Sucursal de Retiro:</strong> ${pickupBranch.name} (${pickupBranch.address})</li>
-      <li><strong>Sucursal de Devolución:</strong> ${returnBranch.name} (${returnBranch.address})</li>
-      <li><strong>Costo Total:</strong> ARS ${reservation.totalCost.toFixed(2)}</li>
-      <li><strong>Estado:</strong> ${reservation.status}</li>
-    </ul>
-    <p>Guarda este comprobante. Te esperamos para el retiro de tu vehículo.</p>
-    <p>¡Gracias por elegir Mobirent!</p>
-  `;
-
-  try {
-    await sendEmail({
-      email: userEmail,
-      subject: `Confirmación de Reserva Mobirent - #${reservation.reservationNumber}`,
-      html: voucherContent,
-    });
-    // Marcar como voucher enviado en la reserva
-    reservation.voucherSent = true;
-    await reservation.save();
-
-    // Enviar recordatorio automático (Escenario 1d)
-    // Esto generalmente se haría con un scheduler (cron job) fuera del flujo de la petición,
-    // pero para simularlo, puedes añadir una nota o una llamada a una función que "registre" el recordatorio.
-    // Aquí solo simulamos que se "registró" el recordatorio.
-    console.log(`[SIMULACIÓN] Recordatorio programado para la reserva ${reservation.reservationNumber} antes de la fecha de retiro.`);
-
-  } catch (error) {
-    console.error(`Error enviando voucher o programando recordatorio para ${userEmail}:`, error);
-    // Podrías decidir qué hacer aquí: ¿fallar la reserva? ¿marcar un error en la reserva?
-    // Por simplicidad, la reserva ya fue creada, solo se notifica del fallo de email.
-    // Si el email es CRÍTICO para la confirmación, esto debería estar antes del res.status(201).
-  }
-
-  // Escenario 1c: Muestra mensaje “Reserva confirmada”
+  // 7) No bloqueamos el vehículo hasta que se pague
   res.status(201).json({
-    message: 'Reserva confirmada exitosamente.',
-    reservationId: reservation._id,
-    reservationNumber: reservation.reservationNumber,
-    totalCost: reservation.totalCost,
-    status: reservation.status,
+    message: 'Reserva creada en estado pendiente. Ahora debes pagar.',
+    reservationId: newReservation._id,
+    reservationNumber: newReservation.reservationNumber,
+    totalCost: newReservation.totalCost,
+    status: newReservation.status
   });
 });
 
+/**
+ * @desc    Obtener todas las reservas del usuario
+ * @route   GET /api/reservations/myreservations
+ * @access  Private (User)
+ */
 const getMyReservations = asyncHandler(async (req, res) => {
-  // Encuentra todas las reservas donde el 'user' sea el ID del usuario logueado.
-  // El método .populate() se usa para reemplazar los ObjectIds de 'vehicle', 'pickupBranch',
-  // y 'returnBranch' con los documentos reales de esos modelos, haciendo la respuesta más rica.
-  console.log('Usuario autenticado (req.user):', req.user);
-  console.log('ID del usuario (req.user._id):', req.user ? req.user._id : 'No user ID');
   const reservations = await Reservation.find({ user: req.user._id })
-    .populate('vehicle') // Popula todos los campos del vehículo
-    .populate('pickupBranch') // Popula todos los campos de la sucursal de retiro
-    .populate('returnBranch'); // Popula todos los campos de la sucursal de devolución
-
+    .populate('vehicle')
+    .populate('pickupBranch')
+    .populate('returnBranch');
   res.status(200).json(reservations);
 });
 
-
+/**
+ * @desc    Obtener detalle de una reserva
+ * @route   GET /api/reservations/:id
+ * @access  Private (User)
+ */
 const getReservationById = asyncHandler(async (req, res) => {
-  // Encuentra la reserva por su ID y popula la información relevante de otros modelos.
-  console.log('ID de reserva recibido en req.params.id:', req.params.id); // <--- ¡AÑADE ESTA LÍNEA!
-
   const reservation = await Reservation.findById(req.params.id)
-    .populate('user', 'username email') // Popula solo 'username' y 'email' del usuario
-    .populate('vehicle', 'make model licensePlate dailyRentalRate') // Popula campos específicos del vehículo
-    .populate('pickupBranch', 'name address') // Popula nombre y dirección de la sucursal de retiro
-    .populate('returnBranch', 'name address'); // Popula nombre y dirección de la sucursal de devolución
+    .populate('user', 'username email')
+    .populate('vehicle', 'brand model licensePlate pricePerDay')
+    .populate('pickupBranch', 'name address')
+    .populate('returnBranch', 'name address');
 
-  // Si la reserva no se encuentra
+  if (!reservation) {
+    res.status(404);
+    throw new Error('Reserva no encontrada.');
+  }
+  res.status(200).json(reservation);
+});
+
+/**
+ * @desc    Procesar pago de una reserva existente
+ * @route   POST /api/reservations/:id/pay
+ * @access  Private (usuario dueño de la reserva)
+ */
+const payReservation = asyncHandler(async (req, res) => {
+  const reservationId = req.params.id;
+  const { paymentData } = req.body;
+  const userId = req.user._id;
+
+  // 1) Validar que vengan todos los campos dentro de paymentData
+  if (
+    !paymentData ||
+    !paymentData.cardNumber ||
+    !paymentData.expiry ||
+    !paymentData.cvv ||
+    !paymentData.method
+  ) {
+    res.status(400);
+    throw new Error(
+      'Faltan datos de la tarjeta: cardNumber, expiry, cvv y method son obligatorios.'
+    );
+  }
+
+  // 2) Buscar la reserva
+  const reservation = await Reservation.findById(reservationId)
+    .populate('vehicle')
+    .populate('pickupBranch')
+    .populate('returnBranch')
+    .populate('user');
   if (!reservation) {
     res.status(404);
     throw new Error('Reserva no encontrada.');
   }
 
-  // **Regla de Negocio Opcional:** Verificar que el usuario que intenta ver la reserva sea el dueño
-  // o tenga un rol autorizado (ej. 'admin' o 'employee').
-  // Descomenta y ajusta esto si necesitas esta validación estricta:
-  // if (reservation.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin' && req.user.role !== 'employee') {
-  //   res.status(401);
-  //   throw new Error('No autorizado para ver esta reserva.');
-  // }
+  // 3) Verificar que el usuario propietario sea el que paga
+  if (reservation.user._id.toString() !== userId.toString()) {
+    res.status(403);
+    throw new Error('No autorizado para pagar esta reserva.');
+  }
 
-  res.status(200).json(reservation);
+  // 4) Solo permitir pago si está “pending” y dentro de los primeros 30 minutos
+  if (reservation.status !== 'pending') {
+    res.status(400);
+    throw new Error('Esta reserva ya no está pendiente de pago.');
+  }
+  const now = new Date();
+  const createdAt = new Date(reservation.createdAt);
+  if (now - createdAt > 30 * 60 * 1000) {
+    // si pasaron más de 30 minutos, cancelar la reserva y liberar vehículo
+    reservation.status = 'cancelled';
+    await reservation.save();
+    res.status(400);
+    throw new Error(
+      'Se venció el plazo de pago (30 min). La reserva ha sido cancelada.'
+    );
+  }
+
+  // 5) Procesar el pago simulado
+  const monto = reservation.totalCost;
+  const resultado = await fakePaymentService.processPayment(paymentData, monto);
+
+  if (resultado.status === 'rejected') {
+    // 6b) Pago rechazado: la reserva sigue “pending” y guardamos el intento
+    reservation.paymentInfo = {
+      transactionId: resultado.transactionId,
+      method: paymentData.method,
+      status: 'rejected'
+    };
+    await reservation.save();
+
+    return res.status(400).json({
+      message: 'Pago rechazado, intenta con otra tarjeta.',
+      status: 'rejected'
+    });
+  }
+
+  if (resultado.status === 'pending') {
+    // 6c) Pago en proceso (estado intermedio)
+    reservation.paymentInfo = {
+      transactionId: resultado.transactionId,
+      method: paymentData.method,
+      status: 'pending'
+    };
+    await reservation.save();
+
+    return res.status(200).json({
+      message: 'Pago en proceso. Te notificaremos cuando se confirme.',
+      status: 'pending'
+    });
+  }
+
+  // 6a) Si status === 'approved'
+  reservation.status = 'confirmed';
+  reservation.paymentInfo = {
+    transactionId: resultado.transactionId,
+    method: paymentData.method,
+    status: 'approved'
+  };
+  await reservation.save();
+
+  // 7) Marcar vehículo como reservado
+  const vehiculo = await Vehicle.findById(reservation.vehicle._id);
+  if (vehiculo) {
+    vehiculo.isReserved = true;
+    await vehiculo.save();
+  }
+
+  // 8) Enviar voucher por correo
+  try {
+    const correoHtml = `
+      <h1>Pago Aprobado - Mobirent</h1>
+      <p>Tu pago ha sido procesado exitosamente. Aquí tu comprobante:</p>
+      <ul>
+        <li><strong>Reserva:</strong> ${reservation.reservationNumber}</li>
+        <li><strong>Total:</strong> ARS ${reservation.totalCost.toFixed(2)}</li>
+        <li><strong>Transacción:</strong> ${resultado.transactionId}</li>
+        <li><strong>Estado:</strong> Aprobado</li>
+      </ul>
+      <p>Gracias por confiar en Mobirent.</p>
+    `;
+    await sendEmail({
+      email: reservation.user.email,
+      subject: `Pago Confirmado - Reserva #${reservation.reservationNumber}`,
+      html: correoHtml
+    });
+    reservation.voucherSent = true;
+    await reservation.save();
+  } catch (mailErr) {
+    console.error('Error al enviar voucher:', mailErr);
+  }
+
+  return res.status(200).json({
+    message: 'Pago aprobado y reserva confirmada.',
+    status: 'approved'
+  });
 });
 
-// ¡¡¡ASEGÚRATE DE QUE ESTA PARTE ESTÉ AL FINAL DEL ARCHIVO Y EXPORTE TODO!!!
 module.exports = {
   createReservation,
   getMyReservations,
   getReservationById,
-  // Si tienes otras funciones en este controlador, asegúrate de exportarlas también aquí.
+  payReservation
 };
