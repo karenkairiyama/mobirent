@@ -1,0 +1,26 @@
+// /frontend/src/api/reservations.js
+import axios from './axiosInstance';
+
+// Crear reserva
+export const createReservation = async (data) => {
+  const response = await axios.post('/reservations', data);
+  return response.data;
+};
+
+// Obtener mis reservas
+export const getMyReservations = async () => {
+  const response = await axios.get('/reservations/myreservations');
+  return response.data;
+};
+
+// Obtener detalle de reserva
+export const getReservationById = async (id) => {
+  const response = await axios.get(`/reservations/${id}`);
+  return response.data;
+};
+
+// Cancelar reserva
+export const cancelReservation = async (id) => {
+  const response = await axios.delete(`/reservations/${id}`);
+  return response.data;
+};

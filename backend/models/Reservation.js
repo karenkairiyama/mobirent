@@ -52,7 +52,7 @@ const reservationSchema = mongoose.Schema(
     paymentInfo: { // Información opcional del pago si se guarda (ej. ID de transacción, método)
       transactionId: { type: String },
       method: { type: String },
-      status: { type: String, enum: ['approved', 'rejected', 'pending'] },
+      status: { type: String, enum: ['approved', 'rejected', 'pending'], default: 'pending' },
     },
     // Podrías añadir un campo para saber si el voucher fue enviado
     voucherSent: {
