@@ -172,7 +172,7 @@ function CreateReservationPage() {
                 const vehicleResponse = await axios.get(`${API_BASE_URL}/vehicles/${vehicleId}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setVehicle(vehicleResponse.data);
+                setVehicle(vehicleResponse.data.data);
                 
                 // 2. Fetch Branches
                 const branchesResponse = await axios.get(`${API_BASE_URL}/branches`, {
@@ -247,27 +247,27 @@ function CreateReservationPage() {
             }
 
             const reservationData = {
-                vehicle: vehicle._id,
-                pickupBranch: pickupBranchId,
-                returnBranch: returnBranchId,
+                vehicleId: vehicle._id,
+                pickupBranchId: pickupBranchId,
+                returnBranchId: returnBranchId,
                 startDate: new Date(pickupDate).toISOString(),
                 endDate: new Date(returnDate).toISOString(),
                 // Payment info is simplified for now, as discussed earlier, or can be added here
-                paymentInfo: {
-                    transactionId: `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                    method: 'credit_card', // O algún otro método de pago
-                    status: 'approved' // Asumimos aprobado para la simulación
-                }
+                
             };
+
+            console.log('>>> Enviando a backend:', reservationData);
 
             const response = await axios.post(`${API_BASE_URL}/reservations`, reservationData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.status === 201) {
-                setSuccessMessage('¡Reserva creada con éxito! Se ha enviado un voucher a tu correo.');
-                // Optionally, navigate to a confirmation page or "My Reservations"
-                setTimeout(() => navigate('/my-reservations'), 3000); // Redirect after 3 seconds
+                //Obtenemos el reservationId que devolvió el backend
+                const { reservationId } = response.data;
+
+                // Redirigimos al usuario a la pag de pago
+                navigate(`/pay/${reservationId}`);
             }
 
         } catch (err) {

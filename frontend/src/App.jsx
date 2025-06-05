@@ -23,9 +23,11 @@ import ResetPassword from "./components/ResetPassword.jsx";
 import "./App.css";
 import Navbar from "./components/Navbar";
 
-// AQUI DEBES AGREGAR LA IMPORTACIÓN DE CreateReservationPage
 import CreateReservationPage from './components/CreateReservationPage.jsx'; // <--- ¡IMPORTA ESTO AQUÍ!
-
+import PaymentPage from "./components/PaymentPage.jsx";
+import PaymentSuccess from './components/PaymentSuccess.jsx';
+import MyReservationsPage from './components/MyReservationsPage.jsx';
+import ReservationDetailPage from './components/ReservationDetailPage.jsx';
 // Componente de Ruta Protegida 29/5 micha
 // **ESTA ES LA ÚNICA Y CORRECTA DECLARACIÓN DE ProtectedRoute**
 // Se mueve aquí para que pueda usar useAuth directamente,
@@ -104,6 +106,44 @@ function App() {
             element={
               <AppProtectedRoute allowedRoles={["user", "employee", "admin"]}> {/* Permite a usuarios, empleados y admins crear reservas */}
                 <CreateReservationPage />
+              </AppProtectedRoute>
+            }
+          />
+
+          {/* PAGAR RESERVA */}
+          <Route
+            path="/pay/:reservationId"          // <--- aquí
+            element={
+              <AppProtectedRoute allowedRoles={["user", "employee", "admin"]}>
+                <PaymentPage />
+              </AppProtectedRoute>
+            }
+          />
+
+          {/* PÁGINA DE ÉXITO DE PAGO */}
+          <Route
+            path="/payment-success/:reservationId"
+            element={
+              <AppProtectedRoute allowedRoles={['user','employee','admin']}>
+                <PaymentSuccess />
+              </AppProtectedRoute>
+          }
+          />
+
+          {/* Rutas protegidas para “Mis Reservas” y detalle */}
+          <Route
+            path="/my-reservations"
+            element={
+              <AppProtectedRoute allowedRoles={['user','employee','admin']}>
+                <MyReservationsPage />
+              </AppProtectedRoute>
+            }
+          />
+          <Route
+            path="/reservations/:id"
+            element={
+              <AppProtectedRoute allowedRoles={['user','employee','admin']}>
+                <ReservationDetailPage />
               </AppProtectedRoute>
             }
           />
