@@ -369,7 +369,7 @@ function AdminUserManagementPage() {
     return (
         <PageContainer>
             <MainContent>
-                <PageTitle>Gestión de Usuarios (Admin)</PageTitle>
+                <PageTitle>Gestión de Usuarios</PageTitle>
                 <PageSubText>Aquí puedes crear nuevos usuarios y gestionar los existentes.</PageSubText>
 
                 <StyledForm onSubmit={handleSubmit}>
@@ -460,6 +460,10 @@ function AdminUserManagementPage() {
                     {message && <Message className={messageType}>{message}</Message>}
                 </StyledForm>
 
+                <BackButton onClick={handleGoBack}>
+                    Volver a Home
+                </BackButton>
+
                 <UserListContainer>
                     <h2>Usuarios Existentes</h2>
                     {users.length > 0 ? (
@@ -479,10 +483,6 @@ function AdminUserManagementPage() {
                         <PageSubText>No hay usuarios registrados.</PageSubText>
                     )}
                 </UserListContainer>
-
-                <BackButton onClick={handleGoBack}>
-                    Volver a Home
-                </BackButton>
             </MainContent>
         </PageContainer>
     );
