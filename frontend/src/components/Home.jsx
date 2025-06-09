@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; 
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -404,7 +404,7 @@ const RentButtonStyled = styled.button`
 function Home() {
     const { user, logout } = useAuth();
     const [vehicles, setVehicles] = useState([]);
-    const [branches, setBranches] = useState([]); 
+    const [branches, setBranches] = useState([]);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -429,33 +429,7 @@ function Home() {
         return `${yyyy}-${mm}-${dd}`;
     }, []);
 
-    
-    useEffect(() => {
-        const fetchBranches = async () => {
-            try {
-                // MODIFICACIÓN: Usamos la variable de entorno
-                const response = await fetch(`${API_BASE_URL}/branches`);
-                const data = await response.json();
-                if (response.ok) {
-                    setBranches(data);
-                } else {
-                    console.error('Error al cargar sucursales:', data.message);
-                }
-            } catch (err) {
-                console.error('Error de red al cargar sucursales:', err);
-            }
-        };
-        fetchBranches();
-
-        
-        const queryParams = new URLSearchParams(location.search);
-        setSelectedBranch(queryParams.get('branchId') || '');
-        setPickupDate(queryParams.get('pickupDate') || '');
-        setReturnDate(queryParams.get('returnDate') || '');
-        setSelectedType(queryParams.get('type') || '');
-
-    }, [location.search, getMinDate]);
-
+    // useCallback para la función de carga de vehículos
     const fetchAvailableVehicles = useCallback(async (token, filters) => {
         try {
             const headers = {
@@ -466,7 +440,6 @@ function Home() {
             }
 
             const query = new URLSearchParams(filters).toString();
-            // MODIFICACIÓN: Usamos la variable de entorno para la URL
             const url = `${API_BASE_URL}/vehicles${query ? `?${query}` : ''}`;
 
             const response = await fetch(url, {
@@ -487,20 +460,52 @@ function Home() {
         }
     }, []);
 
-    // Efecto para cargar vehículos 
+    // useEffect unificado para cargar ramas, leer parámetros de la URL y realizar la primera carga de vehículos
     useEffect(() => {
         const token = localStorage.getItem("token");
-        const filters = {
-            branchId: selectedBranch,
-            pickupDate: pickupDate,
-            returnDate: returnDate,
-            type: selectedType,
-        };
-        // Limpiar filtros vacíos
-        Object.keys(filters).forEach(key => filters[key] === '' && delete filters[key]);
 
-        fetchAvailableVehicles(token, filters);
-    }, [selectedBranch, pickupDate, returnDate, selectedType, fetchAvailableVehicles]);
+        // 1. Cargar Sucursales
+        const loadBranches = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/branches`);
+                const data = await response.json();
+                if (response.ok) {
+                    setBranches(data);
+                } else {
+                    console.error('Error al cargar sucursales:', data.message);
+                }
+            } catch (err) {
+                console.error('Error de red al cargar sucursales:', err);
+            }
+        };
+        loadBranches();
+
+        // 2. Leer los parámetros de la URL
+        const queryParams = new URLSearchParams(location.search);
+        const branchIdFromUrl = queryParams.get('branchId') || '';
+        const pickupDateFromUrl = queryParams.get('pickupDate') || '';
+        const returnDateFromUrl = queryParams.get('returnDate') || '';
+        const typeFromUrl = queryParams.get('type') || '';
+
+        // 3. Actualizar los estados de los filtros en el componente
+        setSelectedBranch(branchIdFromUrl);
+        setPickupDate(pickupDateFromUrl);
+        setReturnDate(returnDateFromUrl);
+        setSelectedType(typeFromUrl);
+
+        // 4. Iniciar la carga de vehículos inmediatamente con estos parámetros
+        const initialFilters = {
+            branchId: branchIdFromUrl,
+            pickupDate: pickupDateFromUrl,
+            returnDate: returnDateFromUrl,
+            type: typeFromUrl,
+        };
+        // Eliminar filtros vacíos del objeto para la solicitud inicial
+        Object.keys(initialFilters).forEach(key => initialFilters[key] === '' && delete initialFilters[key]);
+
+        fetchAvailableVehicles(token, initialFilters);
+
+    }, [location.search, fetchAvailableVehicles]); // Depende de location.search, fetchAvailableVehicles y API_BASE_URL
 
     const handleApplyFilters = () => {
         // Redirigir a la misma página con los nuevos parámetros de búsqueda
@@ -510,7 +515,8 @@ function Home() {
         if (returnDate) params.append('returnDate', returnDate);
         if (selectedType) params.append('type', selectedType);
 
-        window.history.pushState({}, '', `/home?${params.toString()}`);
+        // Usar navigate para cambiar la URL y que el useEffect con location.search detecte el cambio
+        navigate(`/home?${params.toString()}`);
     };
 
     const handleClearFilters = () => {
@@ -518,7 +524,8 @@ function Home() {
         setPickupDate('');
         setReturnDate('');
         setSelectedType('');
-        window.history.pushState({}, '', '/home'); // Limpiar la URL
+        // Usar navigate para cambiar la URL y que el useEffect con location.search detecte el cambio
+        navigate('/home');
     };
 
     const handleLogout = () => {
@@ -627,10 +634,13 @@ function Home() {
                                         Ver Reportes Admin
                                     </ActionButton>
                                     <ActionButton to="/admin-users" className="secondary">
-                                        Gestionar Usuarios
+                                        Crear Usuarios
                                     </ActionButton>
                                     <ActionButton to="/admin-create-vehicle" className="secondary">
                                         Crear Nuevo Vehículo
+                                    </ActionButton>
+                                    <ActionButton to="/admin-employees" className="secondary">
+                                        Gestionar Empleados
                                     </ActionButton>
                                 </>
                             )}
@@ -660,7 +670,7 @@ function Home() {
                                 <VehicleImage
                                     src={
                                         vehicle.photoUrl ||
-                                        "https://via.placeholder.com/250x150?text=No+Photo" 
+                                        "https://via.placeholder.com/250x150?text=No+Photo"
                                     }
                                     alt={`${vehicle.brand} ${vehicle.model}`}
                                 />
@@ -698,11 +708,12 @@ function Home() {
                                             // Redirige a la página de creación de reserva con el ID del vehículo y otros filtros si existen
                                             const params = new URLSearchParams();
                                             params.append('vehicleId', vehicle._id);
-                                            if (selectedBranch) params.append('pickupBranchId', selectedBranch); // Pasar la sucursal de retiro ya seleccionada
+                                            // Aseguramos que solo se pasen si tienen un valor, para evitar agregar '?pickupBranchId='
+                                            if (selectedBranch) params.append('pickupBranchId', selectedBranch);
                                             if (pickupDate) params.append('pickupDate', pickupDate);
                                             if (returnDate) params.append('returnDate', returnDate);
 
-                                            navigate(`/create-reservation?${params.toString()}`); // NUEVA RUTA
+                                            navigate(`/create-reservation?${params.toString()}`);
                                         }}>
                                             Reservar
                                         </RentButtonStyled>

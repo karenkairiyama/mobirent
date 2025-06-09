@@ -211,7 +211,7 @@ function Login() {
           setPassword(""); // Limpiar la contraseña
           setTimeout(() => {
             navigate("/home"); // Redirige a la página principal
-          }, 1000);
+          },0);
         }
       } else {
         // Errores de credenciales inválidas, etc.
@@ -265,7 +265,7 @@ function Login() {
         setRequiresTwoFactor(false); // Resetea el estado 2FA
         setTimeout(() => {
           navigate("/home"); // Redirige a la página principal
-        }, 1000);
+        }, 0);
       } else {
         // Errores de código inválido/expirado
         setMessage(data.message || "Error al verificar el código.");

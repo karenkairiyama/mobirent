@@ -181,6 +181,10 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Credenciales inválidas." });
     }
 
+    if (user.role === 'employee' && user.status === false) {
+    return res.status(403).json({ message: 'Error inesperado... Contacta al administrador' });
+    }
+
     // --- Lógica 2FA para Admin ---
     if (user.role === "admin") {
       const twoFactorCode = generateTwoFactorCode(); // Asegúrate de tener esta función definida

@@ -139,8 +139,78 @@ const getUsers = async (req, res) => {
     }
 };
 
+const getEmployees = async (req, res) => {
+    try {
+        const employees = await User.find({ role: 'employee' }).select('-password');
+        res.status(200).json(employees);
+    } catch (error) {
+        console.error('Error al obtener empleados:', error);
+        res.status(500).json({ message: 'Error interno del servidor al obtener empleados.' });
+    }
+};
+
+const updateUser = async (req, res) => {
+    const { id } = req.params;
+    const { username, email, password, dni, dateOfBirth, role, status } = req.body;
+
+    try {
+        const user = await User.findById(id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        // Si el usuario actualizando es un admin, y intenta cambiar su propio rol a algo que no sea admin,
+        // o si un admin intenta cambiar el rol de otro admin, esto puede requerir lógica más compleja.
+        // Por simplicidad, aquí permitimos que un admin cambie el rol de otros, pero el admin no puede
+        // cambiar su propio rol (si el id del usuario logueado es el mismo que el id en params)
+        if (req.user._id.toString() === id && role && role !== user.role) {
+            return res.status(403).json({ message: 'No puedes cambiar tu propio rol.' });
+        }
+
+        // Actualizar campos si se proporcionan en el body
+        if (username) user.username = username;
+        if (email) user.email = email;
+        if (password) user.password = password; // El middleware pre('save') se encargará de hashearlo
+        if (dni) user.dni = dni;
+        if (dateOfBirth) user.dateOfBirth = dateOfBirth;
+        if (role) user.role = role;
+
+        // Lógica de actualización de status: solo aplica si el rol del usuario es 'employee'
+        if (user.role === 'employee') {
+            if (status !== undefined && status !== null) {
+                user.status = status;
+            } else if (user.status === undefined) { // Si es un empleado, pero el status no estaba definido (ej. datos antiguos)
+                user.status = true; // Por defecto a activo si está indefinido
+            }
+        } else {
+            // Si el rol no es 'employee' (o se cambió de 'employee' a otra cosa),
+            // asegura que el campo 'status' sea eliminado del documento en MongoDB.
+            user.status = undefined; // Mongoose eliminará el campo si es undefined
+        }
+
+        const updatedUser = await user.save(); // Guarda los cambios
+
+        // Excluir información sensible de la respuesta
+        const userResponse = updatedUser.toObject();
+        delete userResponse.password;
+        delete userResponse.resetPasswordToken;
+        delete userResponse.resetPasswordExpires;
+
+        res.json(userResponse);
+    } catch (error) {
+        console.error('Error al actualizar usuario:', error);
+        if (error.code === 11000) { // Error de duplicado (ej. email o DNI único)
+            return res.status(400).json({ message: 'El email o DNI ya está registrado para otro usuario.' });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al actualizar usuario.' });
+    }
+};
+
 module.exports = {
     createUserByAdmin,
     createUserByEmployee, // ¡NUEVO!
     getUsers,
+    getEmployees,
+    updateUser,
 };
