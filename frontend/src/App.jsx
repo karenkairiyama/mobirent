@@ -28,6 +28,8 @@ import PaymentPage from "./components/PaymentPage.jsx";
 import PaymentSuccess from './components/PaymentSuccess.jsx';
 import MyReservationsPage from './components/MyReservationsPage.jsx';
 import ReservationDetailPage from './components/ReservationDetailPage.jsx';
+import EmployeeManagementPage from './components/EmployeeManagementPage.jsx';
+
 // Componente de Ruta Protegida 29/5 micha
 // **ESTA ES LA ÚNICA Y CORRECTA DECLARACIÓN DE ProtectedRoute**
 // Se mueve aquí para que pueda usar useAuth directamente,
@@ -192,7 +194,14 @@ function App() {
               </AppProtectedRoute>
             }
           />
-
+          <Route
+            path="/admin-employees" // Puedes ajustar esta ruta si lo deseas
+            element={
+              <AppProtectedRoute allowedRoles={["admin"]}>
+                <EmployeeManagementPage />
+              </AppProtectedRoute>
+            }
+          />
           {/* Ruta Catch-all: Cualquier otra ruta no definida redirige a la página principal (Home) */}
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>

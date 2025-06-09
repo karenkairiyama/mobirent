@@ -634,10 +634,13 @@ function Home() {
                                         Ver Reportes Admin
                                     </ActionButton>
                                     <ActionButton to="/admin-users" className="secondary">
-                                        Gestionar Usuarios
+                                        Crear Usuarios
                                     </ActionButton>
                                     <ActionButton to="/admin-create-vehicle" className="secondary">
                                         Crear Nuevo Vehículo
+                                    </ActionButton>
+                                    <ActionButton to="/admin-employees" className="secondary">
+                                        Gestionar Empleados
                                     </ActionButton>
                                 </>
                             )}
