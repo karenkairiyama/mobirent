@@ -53,7 +53,11 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "employee", "admin"],
       default: "user",
     },
-
+    status: {
+    type: Boolean,
+    required: function() { return this.role === 'employee'; }, // Solo requerido si el rol es 'employee'
+    default: function() { return this.role === 'employee' ? true : undefined; } // Por defecto true para empleados, undefined para otros
+    },
     // --- NUEVOS CAMPOS PARA 2FA ---
     twoFactorCode: {
       type: String,
