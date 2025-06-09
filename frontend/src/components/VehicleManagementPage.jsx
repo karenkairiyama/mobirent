@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components'; // Importa styled-components
-
+import axiosInstance from '../api/axiosInstance';
 const PageContainer = styled.div`
     background-color: #f0f2f5;
     min-height: 100vh;
@@ -329,36 +329,28 @@ function VehicleManagementPage() {
     const [error, setError] = useState(null);
 
     // useCallback para la función de carga de datos para evitar re-creaciones
-    const fetchVehiclesAndBranches = useCallback(async (token) => {
+    const fetchVehiclesAndBranches = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const branchesResponse = await fetch('http://localhost:5000/api/branches', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const branchesData = await branchesResponse.json();
-            if (branchesResponse.ok) {
-                setBranches(branchesData);
-            } else {
-                setError(branchesData.message || 'Error al cargar sucursales.');
-            }
+            // Usa axiosInstance para las ramas
 
-            const vehiclesResponse = await fetch('http://localhost:5000/api/vehicles/all', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const vehiclesData = await vehiclesResponse.json();
-            if (vehiclesResponse.ok) {
-                setVehicles(vehiclesData);
-            } else {
-                setError(vehiclesData.message || 'Error al cargar vehículos.');
-            }
+            const branchesResponse = await axiosInstance.get('/branches'); 
+            setBranches(branchesResponse.data);
+
+            
+             // Usa axiosInstance para los vehículos
+            const vehiclesResponse = await axiosInstance.get('/vehicles/all'); // <--- CAMBIO AQUÍ
+            setVehicles(vehiclesResponse.data);
+
         } catch (err) {
             console.error('Error al cargar datos:', err);
-            setError('Ocurrió un error de red o del servidor al cargar los datos.');
+            // Axios envuelve los errores de respuesta en err.response.data
+            setError(err.response?.data?.message || 'Ocurrió un error de red o del servidor al cargar los datos.');
         } finally {
             setLoading(false);
         }
-    }, []); // Dependencia vacía para memoizar la función
+    }, []);
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -370,7 +362,7 @@ function VehicleManagementPage() {
             return;
         }
 
-        fetchVehiclesAndBranches(token);
+        fetchVehiclesAndBranches();
     }, [navigate, fetchVehiclesAndBranches]); // Dependencias para re-ejecutar
 
     const handleStatusToggle = async (vehicleId, currentStatus, type) => {
@@ -399,30 +391,20 @@ function VehicleManagementPage() {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/vehicles/${vehicleId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(updateBody),
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                setVehicles(prevVehicles =>
-                    prevVehicles.map(v =>
-                        v._id === vehicleId ? { ...v, ...data.vehicle } : v
-                    )
-                );
-            } else {
-                alert(`Error al actualizar el estado: ${data.message || 'Error desconocido'}`);
-            }
+            // Usa axiosInstance para actualizar el estado
+            const response = await axiosInstance.put(`/vehicles/${vehicleId}/status`, updateBody); // <--- CAMBIO AQUÍ
+            // Axios devuelve los datos directamente en response.data
+            setVehicles(prevVehicles =>
+                prevVehicles.map(v =>
+                    v._id === vehicleId ? { ...v, ...response.data.vehicle } : v // <--- CAMBIO AQUÍ
+                )
+            );
         } catch (error) {
             console.error('Error de red al actualizar estado:', error);
-            alert('Error de red al intentar actualizar el estado del vehículo.');
+            alert(`Error al actualizar el estado: ${error.response?.data?.message || 'Error desconocido'}`); // <--- CAMBIO AQUÍ
         }
     };
+     
 
     const handleGoBack = () => {
         navigate('/home');

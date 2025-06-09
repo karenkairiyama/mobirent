@@ -1,8 +1,10 @@
 // frontend/src/api/axiosInstance.js
 import axios from 'axios';
-
+// Aquí leemos la variable de entorno VITE_API_URL
+// Vite expone las variables de entorno prefijadas con VITE_ a través de import.meta.env
+const API_BASE_URL = import.meta.env.VITE_API_UR
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
   }

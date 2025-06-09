@@ -29,21 +29,37 @@ const createReservation = asyncHandler(async (req, res) => {
     throw new Error('Faltan datos obligatorios: vehículo, sucursales y fechas.');
   }
 
+    // --- CAMBIOS APLICADOS AQUÍ ---
+  // Normalizar fechas a inicio del día en UTC para comparaciones precisas
   const parsedStartDate = new Date(startDate);
-  parsedStartDate.setHours(0, 0, 0, 0);
   const parsedEndDate = new Date(endDate);
-  parsedEndDate.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
-  if (parsedStartDate < today) {
+  // Obtener el día de hoy en UTC
+  const todayUTC = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
+
+  // Obtener la fecha de inicio de la reserva en UTC
+  const startDateUTC = new Date(Date.UTC(parsedStartDate.getFullYear(), parsedStartDate.getMonth(), parsedStartDate.getDate()));
+
+  // Comparar las fechas normalizadas en UTC
+  if (startDateUTC < todayUTC) { // <--- La comparación se hace con fechas UTC normalizadas
     res.status(400);
     throw new Error('La fecha de inicio no puede ser anterior a hoy.');
   }
-  if (parsedStartDate >= parsedEndDate) {
+  // No necesitas normalizar endDate a UTC para esta validación,
+  // pero sí para la comparación con startDate si las usas así.
+  // Sin embargo, si ambos vienen del Datepicker y se procesan igual, esta es la clave.
+  if (parsedStartDate >= parsedEndDate) { // Esta comparación puede seguir siendo local si ambas son locales
     res.status(400);
     throw new Error('La fecha de fin debe ser posterior a la fecha de inicio.');
   }
+
+  // Es buena práctica asegurarse de que las fechas que guardas en la DB
+  // también sean consistentes (ej. siempre UTC al inicio del día) si eso es lo que esperas.
+  // Si no, mongoose las manejará como ISODate y guardará la hora.
+  // Por simplicidad, si el frontend solo envía 'YYYY-MM-DD', el backend ya lo parsea a las 00:00:00 local.
+  // Mantengamos las fechas que guardamos como vienen si no hay una necesidad explícita de UTC en la DB.
+  // La clave es la comparación.
+  // --- FIN DE CAMBIOS ---
 
   // 2) Verificar existencia y estado de vehículo y sucursales
   const vehicle = await Vehicle.findById(vehicleId);
