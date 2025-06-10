@@ -71,7 +71,9 @@ function PaymentSuccess() {
     }
     const fetchReservation = async () => {
       try {
+        //console.log('Fetching reservation with ID:', reservationId); // <-- NUEVO LOG 1
         const data = await getReservationById(reservationId);
+        //console.log('Reservation data received in frontend:', data); // <-- NUEVO LOG 2
         setReservation(data);
       } catch (err) {
         console.error('Error cargando reserva:', err.response || err);
@@ -103,6 +105,7 @@ function PaymentSuccess() {
   }
 
   if (!reservation) {
+    //console.log('Reservation object is null after loading finished.'); // <-- NUEVO LOG 3
     return (
       <Container>
         <Title>Reserva no encontrada</Title>
@@ -110,6 +113,16 @@ function PaymentSuccess() {
       </Container>
     );
   }
+  
+  // AÑADE ESTOS LOGS JUSTO ANTES DE LA RENDERIZACIÓN DE DETALLES
+  //console.log('Attempting to render reservation details:', reservation); // <-- NUEVO LOG 4
+  //console.log('Reservation vehicle object:', reservation.vehicle);     // <-- NUEVO LOG 5
+  //if (reservation.vehicle) {
+   // console.log('Reservation vehicle brand:', reservation.vehicle.brand); // <-- NUEVO LOG 6 (Solo si vehicle existe)
+  //} else {
+  //  console.log('Reservation vehicle is UNDEFINED or NULL!'); // <-- NUEVO LOG 7
+  //}
+
 
   // Formato legible
   const startDateStr = new Date(reservation.startDate).toLocaleDateString('es-AR');

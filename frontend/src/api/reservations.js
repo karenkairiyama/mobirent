@@ -24,3 +24,10 @@ export const cancelReservation = async (id) => {
   const response = await axios.delete(`/reservations/${id}`);
   return response.data;
 };
+
+//export const payReservation = async (reservationId, paymentData) => {
+    // La URL debe coincidir con la ruta de tu backend: /api/reservations/:id/pay
+    // y el backend espera un objeto { paymentData: ... }
+    //const response = await axios.post(`/api/reservations/${reservationId}/pay`, { paymentData });
+    //return response.data;
+//};
