@@ -4,6 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import logoImage from '../assets/logo.png'; // Asegúrate de tener tu logo aquí, o cambia a un texto
 
+// --- Importar useAuth si lo usas en otros lugares y para consistencia, aunque aquí uses localStorage directamente ---
+// import { useAuth } from '../context/AuthContext.jsx';
+
+
 // Styled Components para el Navbar
 const Nav = styled.nav`
     background-color: #000; /* Fondo negro para la barra de navegación */
@@ -102,27 +106,15 @@ const DropdownContent = styled.div`
         display: block; /* Muestra el contenido cuando el contenedor principal está en hover */
     }
 
-    a {
+    a, button { /* Aplica estilos a enlaces y botones dentro del dropdown */
         color: white;
         padding: 12px 16px;
         text-decoration: none;
         display: block;
+        width: 100%; /* Asegura que ocupen todo el ancho del dropdown */
         text-align: left; /* Alinea el texto a la izquierda */
-
-        &:hover {
-            background-color: #555;
-        }
-    }
-
-    button {
-        color: white;
-        padding: 12px 16px;
-        text-decoration: none;
-        display: block;
-        width: 100%;
-        text-align: left;
-        background: none;
-        border: none;
+        background: none; /* Elimina el fondo predeterminado de los botones */
+        border: none; /* Elimina el borde predeterminado de los botones */
         cursor: pointer;
 
         &:hover {
@@ -141,7 +133,10 @@ const Navbar = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
         localStorage.removeItem('userRole');
-        navigate('/home'); // Redirige a la LandingPage después de cerrar sesión
+        localStorage.removeItem('userId'); // Asegúrate de limpiar también el ID del usuario
+        localStorage.removeItem('userDni'); // Y el DNI
+        localStorage.removeItem('userDateOfBirth'); // Y la fecha de nacimiento
+        navigate('/home'); // Redirige a Home (o LandingPage si es tu ruta principal) después de cerrar sesión
     };
 
     return (
@@ -153,24 +148,34 @@ const Navbar = () => {
             </LogoContainer>
 
             <AuthButtons>
-                {username ? (
+                {username ? ( // Si hay un nombre de usuario, significa que está logueado
                     <DropdownContainer>
                         <DropdownButton>
-                            Hola, {username} ({userRole.toUpperCase()})
+                            Hola, {username} ({userRole ? userRole.toUpperCase() : 'USUARIO'})
                         </DropdownButton>
                         <DropdownContent>
-                            {/* Opciones según el rol, si es necesario */}
-                            {userRole === 'admin' && (
+                            {/* Enlace a Mis Reservas para todos los logueados */}
+                            <Link to="/my-reservations">Mis Reservas</Link>
+
+                            {/* --- NUEVO ENLACE AL PANEL DE CONTROL --- */}
+                            {(userRole === 'admin' || userRole === 'employee') && (
+                                <Link to="/panel-de-control">Panel de Control</Link>
+                            )}
+
+                            {/* ELIMINA O COMENTA ESTOS ENLACES INDIVIDUALES, YA ESTÁN EN PANELCONTROL.JSX */}
+                            {/* {userRole === 'admin' && (
                                 <Link to="/admin-reports">Reportes</Link>
                             )}
                             {userRole === 'employee' && (
-                                <Link to="/vehicles-management">Gestión Vehículos</Link>
-                            )}
-                            {/* ... otras opciones de perfil si las tienes */}
+                                <Link to="/vehicles-management">Gestión Vehículos</Link> // Asegúrate que esta ruta es correcta
+                            )} */}
+                            
+                            {/* ... otras opciones de perfil si las tienes que NO van en Panel de Control */}
                             <button onClick={handleLogout}>Cerrar Sesión</button>
                         </DropdownContent>
                     </DropdownContainer>
                 ) : (
+                    // Si no está logueado
                     <>
                         <AuthButton to="/login" className="login-button">Iniciar Sesión</AuthButton>
                         <AuthButton to="/register">Registrarse</AuthButton>
