@@ -53,11 +53,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("userRole");
     setIsAuthenticated(false);
     setUser(null);
-    navigate("/home"); // Redirige a /login después del logout
+    navigate("/"); // Redirige a /login después del logout
     // window.location.reload(); // Opcional: Si persisten problemas, forzar recarga
   };
 
-    const getAuthToken = useCallback(() => {
+  const getAuthToken = useCallback(() => {
     return localStorage.getItem("token");
   }, []);
 

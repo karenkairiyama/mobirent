@@ -164,15 +164,17 @@ function Login() {
   const [requiresTwoFactor, setRequiresTwoFactor] = useState(false); // Nuevo estado para controlar si se requiere 2FA
   const [userEmailFor2FA, setUserEmailFor2FA] = useState(""); // Para guardar el email y usarlo en la verificación 2FA
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
     setMessageType("");
-
+    setIsLoading(true);
     if (!email || !password) {
       setMessage("Por favor, introduce tu email y contraseña.");
       setMessageType("error");
+      setIsLoading(false);
       return;
     }
 
@@ -209,9 +211,7 @@ function Login() {
           );
           setMessageType("success");
           setPassword(""); // Limpiar la contraseña
-          setTimeout(() => {
-            navigate("/home"); // Redirige a la página principal
-          },0);
+          navigate("/home"); // Redirige a la página principal
         }
       } else {
         // Errores de credenciales inválidas, etc.
@@ -224,6 +224,8 @@ function Login() {
       setMessage("Ocurrió un error de red o de servidor.");
       setMessageType("error");
       setPassword(""); // Limpiar la contraseña en caso de error de red
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -232,25 +234,23 @@ function Login() {
     e.preventDefault();
     setMessage("");
     setMessageType("");
-
+    setIsLoading(true);
     if (!twoFactorCode) {
       setMessage("Por favor, introduce el código de verificación.");
       setMessageType("error");
+      setIsLoading(false);
       return;
     }
 
     try {
       // LÍNEA MODIFICADA
-      const response = await fetch(
-        `${API_BASE_URL}/auth/verify-2fa`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: userEmailFor2FA, code: twoFactorCode }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/auth/verify-2fa`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: userEmailFor2FA, code: twoFactorCode }),
+      });
 
       const data = await response.json();
 
@@ -279,6 +279,8 @@ function Login() {
       );
       setMessageType("error");
       setTwoFactorCode(""); // Limpia el campo del código en caso de error de red
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -311,7 +313,10 @@ function Login() {
                 required
               />
             </FormGroup>
-            <SubmitButton type="submit">Entrar</SubmitButton>
+            <SubmitButton type="submit" disabled={isLoading}>
+              {isLoading ? "Conectando..." : "Iniciar Sesión"}{" "}
+              {/* <--- ASEGÚRATE DE QUE TU BOTÓN SE VEA ASÍ */}
+            </SubmitButton>
           </Form>
         ) : (
           // Mostrar formulario de 2FA si se requiere
