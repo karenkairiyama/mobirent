@@ -33,13 +33,6 @@ app.use((req, res, next) => {
 });
 // ---------------------------------------------------------------
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Conectado a MongoDB Atlas"))
-  .catch((err) =>
-    console.error("❌ Error al conectar a MongoDB:", err.message)
-  );
-
 
 // Rutas de la API
 app.use("/api/auth", authRoutes);
