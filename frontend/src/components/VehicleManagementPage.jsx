@@ -407,7 +407,7 @@ function VehicleManagementPage() {
      
 
     const handleGoBack = () => {
-        navigate('/home');
+        navigate('/panel-de-control');
     };
 
     const filteredVehicles = selectedBranchFilter
@@ -547,7 +547,7 @@ function VehicleManagementPage() {
                 )}
 
                 <Button onClick={handleGoBack} className="secondary" style={{ marginTop: '30px' }}>
-                    Volver a Home
+                    Volver a Panel de Control
                 </Button>
             </MainContent>
         </PageContainer>

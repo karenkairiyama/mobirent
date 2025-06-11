@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { useAuth } from "../context/AuthContext.jsx";
+//import { useAuth } from "../context/AuthContext.jsx";
+
 
 // Definimos la URL base de la API usando la variable de entorno de Vite
 const API_BASE_URL = import.meta.env.VITE_API_URL; // <--- LÍNEA AÑADIDA
@@ -365,19 +366,19 @@ const RentButtonStyled = styled.button`
 `;
 
 function Home() {
-  const { user, logout } = useAuth();
-  const [vehicles, setVehicles] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const location = useLocation();
-  const navigate = useNavigate();
+    //const { user, logout } = useAuth();
+    const [vehicles, setVehicles] = useState([]);
+    const [branches, setBranches] = useState([]);
+    const location = useLocation();
+    const navigate = useNavigate();
 
   const [selectedBranch, setSelectedBranch] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
   const [selectedType, setSelectedType] = useState("");
 
-  const username = user ? user.username : null;
-  const userRole = user ? user.role : null;
+    //const username = user ? user.username : null;
+    //const userRole = user ? user.role : null;
 
   const vehicleTypes = [
     "sedan",
@@ -497,9 +498,9 @@ function Home() {
     navigate("/home");
   };
 
-  const handleLogout = () => {
-    logout();
-  };
+    //const handleLogout = () => {
+    //    logout();
+    //};
 
   return (
     <HomePageContainer>
@@ -570,104 +571,32 @@ function Home() {
         </FilterButton>
       </FilterSidebar>
 
-      <MainContent>
-        {username ? (
-          <>
-            <WelcomeTitle>
-              Bienvenido, <span id="welcomeUsername">{username}</span>!
-            </WelcomeTitle>
-            <SubText>
-              Esta es tu página principal. Tu rol es: **
-              {userRole ? userRole.toUpperCase() : "N/A"}**
-            </SubText>
-          </>
-        ) : (
-          <>
-            <WelcomeTitle>Explora Nuestra Flota de Vehículos</WelcomeTitle>
-            <SubText>
-              Mira los vehículos disponibles para alquilar. ¡Regístrate o inicia
-              sesión para reservar!
-            </SubText>
-          </>
-        )}
-
-        <ButtonGroup>
-          {username ? (
-            <>
-              {(userRole === "employee" || userRole === "admin") && (
-                <ActionButton to="/vehicles-management">
-                  Gestión de Vehículos
-                </ActionButton>
-              )}
-
-              {userRole === "employee" && (
-                <ActionButton
-                  to="/create-user-as-employee"
-                  className="secondary"
-                >
-                  Cargar Nuevo Cliente
-                </ActionButton>
-              )}
-
-              {userRole === "admin" && (
-                <>
-                  <ActionButton to="/admin-reports" className="secondary">
-                    Ver Reportes Admin
-                  </ActionButton>
-                  <ActionButton to="/admin-users" className="secondary">
-                    Crear Usuarios
-                  </ActionButton>
-                  <ActionButton
-                    to="/admin-create-vehicle"
-                    className="secondary"
-                  >
-                    Crear Nuevo Vehículo
-                  </ActionButton>
-                  <ActionButton to="/admin-employees" className="secondary">
-                    Gestionar Empleados
-                  </ActionButton>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <ActionButton to="/login">Iniciar Sesión</ActionButton>
-              <ActionButton to="/register" className="secondary">
-                Registrarse
-              </ActionButton>
-            </>
-          )}
-        </ButtonGroup>
-
-        <h2>Vehículos Disponibles para Alquilar:</h2>
-        {vehicles.length === 0 ? (
-          <SubText>
-            No hay vehículos disponibles en este momento con los filtros
-            seleccionados.
-          </SubText>
-        ) : (
-          <VehicleGrid>
-            {vehicles.map((vehicle) => (
-              <VehicleCard key={vehicle._id}>
-                <VehicleImage
-                  src={
-                    vehicle.photoUrl ||
-                    "https://via.placeholder.com/250x150?text=No+Photo"
-                  }
-                  alt={`${vehicle.brand} ${vehicle.model}`}
-                />
-                <VehicleDetails>
-                  {/* Contenedor para el grupo izquierdo de información */}
-                  <VehicleInfoGroupLeft>
-                    <VehicleInfoTop>
-                      <VehicleName>
-                        {vehicle.brand} {vehicle.model}
-                      </VehicleName>
-                      <VehicleDescription>
-                        {vehicle.type.charAt(0).toUpperCase() +
-                          vehicle.type.slice(1)}
-                      </VehicleDescription>
-                    </VehicleInfoTop>
+            <MainContent>
+                <h2>Vehículos Disponibles para Alquilar:</h2>
+                {vehicles.length === 0 ? (
+                    <SubText>No hay vehículos disponibles en este momento con los filtros seleccionados.</SubText>
+                ) : (
+                    <VehicleGrid>
+                        {vehicles.map((vehicle) => (
+                            <VehicleCard key={vehicle._id}>
+                                <VehicleImage
+                                    src={
+                                        vehicle.photoUrl ||
+                                        "https://via.placeholder.com/250x150?text=No+Photo"
+                                    }
+                                    alt={`${vehicle.brand} ${vehicle.model}`}
+                                />
+                                <VehicleDetails>
+                                    {/* Contenedor para el grupo izquierdo de información */}
+                                    <VehicleInfoGroupLeft>
+                                        <VehicleInfoTop>
+                                            <VehicleName>
+                                                {vehicle.brand} {vehicle.model}
+                                            </VehicleName>
+                                            <VehicleDescription>
+                                                {vehicle.type.charAt(0).toUpperCase() + vehicle.type.slice(1)}
+                                            </VehicleDescription>
+                                        </VehicleInfoTop>
 
                     <VehicleSpecsContainer>
                       <VehicleSpecItem>

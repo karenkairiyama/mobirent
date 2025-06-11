@@ -89,7 +89,7 @@ function EmployeeUserCreationPage() {
     };
 
     const handleGoBack = () => {
-        navigate('/home');
+        navigate('/panel-de-control');
     };
 
     return (
@@ -156,7 +156,7 @@ function EmployeeUserCreationPage() {
             </form>
 
             <button onClick={handleGoBack} style={{ marginTop: '30px' }}>
-                Volver a Home
+                Volver a Panel de Control
             </button>
         </div>
     );

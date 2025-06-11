@@ -146,6 +146,29 @@ function LandingPage() {
     }, []);
 
     const handleSearch = () => {
+        // Limpiar cualquier error anterior
+        setError(null);
+
+        // --- VALIDACIÓN DE FECHAS ---
+        if (pickupDate && returnDate) {
+            const pDate = new Date(pickupDate);
+            const rDate = new Date(returnDate);
+
+            // Resetea la hora para comparar solo las fechas
+            pDate.setHours(0, 0, 0, 0);
+            rDate.setHours(0, 0, 0, 0);
+
+            if (rDate < pDate) {
+                setError('La fecha de devolución no puede ser anterior a la fecha de retiro.');
+                return; // Detiene la función si hay un error
+            }
+        } else if (pickupDate && !returnDate) {
+            setError('Por favor, selecciona una fecha de devolución.');
+            return;
+        } else if (!pickupDate && returnDate) {
+            setError('Por favor, selecciona una fecha para retirar el auto.');
+            return;
+        }
         // Redirige a la página Home con los parámetros de búsqueda en la URL
         const params = new URLSearchParams();
         if (selectedBranch) {

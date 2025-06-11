@@ -102,28 +102,16 @@ const DropdownContent = styled.div`
     display: block; /* Muestra el contenido cuando el contenedor principal está en hover */
   }
 
-  a {
-    color: white;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    text-align: left; /* Alinea el texto a la izquierda */
-
-    &:hover {
-      background-color: #555;
-    }
-  }
-
-  button {
-    color: white;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: none;
-    cursor: pointer;
+    a, button { /* Aplica estilos a enlaces y botones dentro del dropdown */
+        color: white;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        width: 100%; /* Asegura que ocupen todo el ancho del dropdown */
+        text-align: left; /* Alinea el texto a la izquierda */
+        background: none; /* Elimina el fondo predeterminado de los botones */
+        border: none; /* Elimina el borde predeterminado de los botones */
+        cursor: pointer;
 
     &:hover {
       background-color: #555;
@@ -181,6 +169,43 @@ const Navbar = () => {
         Alquilando
       </LogoContainer>
 
+            <AuthButtons>
+                {username ? ( // Si hay un nombre de usuario, significa que está logueado
+                    <DropdownContainer>
+                        <DropdownButton>
+                            Hola, {username} ({userRole.toUpperCase()})
+                        </DropdownButton>
+                        <DropdownContent>
+                            {/* Enlace a Mis Reservas para todos los logueados */}
+                            <Link to="/my-reservations">Mis Reservas</Link>
+
+                            {/* --- NUEVO ENLACE AL PANEL DE CONTROL --- */}
+                            {(userRole === 'admin' || userRole === 'employee') && (
+                                <Link to="/panel-de-control">Panel de Control</Link>
+                            )}
+
+                            {/* ELIMINA O COMENTA ESTOS ENLACES INDIVIDUALES, YA ESTÁN EN PANELCONTROL.JSX */}
+                            {/* {userRole === 'admin' && (
+                                <Link to="/admin-reports">Reportes</Link>
+                            )}
+                            {userRole === 'employee' && (
+                                <Link to="/vehicles-management">Gestión Vehículos</Link> // Asegúrate que esta ruta es correcta
+                            )} */}
+                            
+                            {/* ... otras opciones de perfil si las tienes que NO van en Panel de Control */}
+                            <LogoutButton onClick={handleLogout}>Cerrar Sesión</LogoutButton>
+                        </DropdownContent>
+                    </DropdownContainer>
+                ) : (
+                    // Si no está logueado
+                    <>
+                        <AuthButton to="/login" className="login-button">Iniciar Sesión</AuthButton>
+                        <AuthButton to="/register">Registrarse</AuthButton>
+                    </>
+                )}
+            </AuthButtons>
+        </Nav>
+    );
       <AuthButtons>
         {username ? (
           <DropdownContainer>
