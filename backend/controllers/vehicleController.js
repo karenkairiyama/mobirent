@@ -1,5 +1,5 @@
 // backend/controllers/vehicleController.js
-
+const Reservation = require('../models/Reservation');
 const Vehicle = require('../models/Vehicle');
 const Branch = require('../models/Branch'); // Importa el modelo Branch
 const asyncHandler = require('../middleware/asyncHandler');
@@ -128,13 +128,13 @@ const getAllVehicles = async (req, res) => {
 // @access  Authenticated Users (cualquier rol) o sin autenticar
 const getAvailableVehicles = async (req, res) => {
     try {
-        // Obtenemos los parámetros de consulta relevantes
-        const { branchId, type } = req.query; // <--- AHORA OBTENEMOS branchId Y TYPE
+        // Obtenemos todos los parámetros de consulta relevantes
+        const { branchId, type, pickupDate, returnDate } = req.query; // Ahora sí extraemos las fechas
 
         let filter = {
-            isAvailable: true,
-            needsMaintenance: false,
-            isReserved: false
+            isAvailable: true,         // Debe estar marcado como disponible
+            needsMaintenance: false    // No debe necesitar mantenimiento
+            // Ya NO filtramos por 'isReserved' aquí, lo manejamos con la lógica de superposición de reservas.
         };
 
         // Si se proporciona un branchId, agregarlo al filtro
@@ -143,15 +143,48 @@ const getAvailableVehicles = async (req, res) => {
         }
 
         // Si se proporciona un tipo de vehículo, agregarlo al filtro
-        if (type) { // <--- NUEVA LÓGICA PARA EL FILTRO POR TIPO
+        if (type) {
             filter.type = type;
         }
 
-        // Las fechas (pickupDate, returnDate) se ignoran en el backend por ahora,
-        // aunque el frontend pueda enviarlas, no se usan para el filtro de la DB aquí.
+        let reservedVehicleIds = [];
 
-        // Añadimos .populate('branch') para obtener los detalles de la sucursal
+        // Lógica para filtrar vehículos que NO tienen una reserva en el rango de fechas
+        if (pickupDate && returnDate) {
+            const parsedPickupDate = new Date(pickupDate);
+            const parsedReturnDate = new Date(returnDate);
+
+            // Asegurarse de que las fechas sean válidas
+            if (isNaN(parsedPickupDate.getTime()) || isNaN(parsedReturnDate.getTime())) {
+                return res.status(400).json({ message: 'Fechas de recogida o devolución inválidas.' });
+            }
+
+            // 1. Encontrar los IDs de vehículos que tienen reservas que se SUPERPONEN
+            // con el rango de fechas solicitado.
+            // Una reserva [start, end] se superpone con [reqPickup, reqReturn] si:
+            // (start <= reqReturn AND end >= reqPickup)
+            const overlappingReservations = await Reservation.find({
+                $and: [
+                    { startDate: { $lte: parsedReturnDate } }, // La reserva empieza antes o en la fecha de devolución solicitada
+                    { endDate: { $gte: parsedPickupDate } }    // Y termina después o en la fecha de recogida solicitada
+                ],
+                // CORRECCIÓN AQUÍ: Incluye todos los estados que significan que el vehículo NO está disponible
+                status: { $in: ['confirmed'] }
+            }).select('vehicle'); // Solo necesitamos el campo 'vehicle' (su ID)
+
+            // Extrae los IDs de los vehículos de las reservas superpuestas
+            reservedVehicleIds = overlappingReservations.map(res => res.vehicle);
+
+            // 2. Añadir la condición de exclusión al filtro principal
+            // Esto asegura que los vehículos devueltos NO sean aquellos que están reservados.
+            if (reservedVehicleIds.length > 0) {
+                filter._id = { $nin: reservedVehicleIds }; // $nin significa "not in"
+            }
+        }
+
+        // Ejecutar la consulta de vehículos con el filtro completo
         const vehicles = await Vehicle.find(filter).populate('branch');
+
         res.status(200).json(vehicles);
     } catch (error) {
         console.error('Error al obtener vehículos disponibles:', error);
