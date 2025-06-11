@@ -143,7 +143,7 @@ const LogoutButton = styled.button`
 `;
 
 const Navbar = () => {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const { user, logout } = useAuth();
   const username = user ? user.username : null;
   const userRole = user ? user.role : null;
@@ -204,7 +204,6 @@ const Navbar = () => {
                     </>
                 )}
             </AuthButtons>
-        </Nav>
     );
       <AuthButtons>
         {username ? (
