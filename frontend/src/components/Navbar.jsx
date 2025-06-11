@@ -1,6 +1,6 @@
 // frontend/src/components/Navbar.jsx
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, /*useNavigate*/ } from "react-router-dom";
 import styled from "styled-components";
 import logoImage from "../assets/logo.png"; // Asegúrate de tener tu logo aquí, o cambia a un texto
 import { useAuth } from "../context/AuthContext.jsx";
@@ -204,34 +204,6 @@ const Navbar = () => {
                     </>
                 )}
             </AuthButtons>
-    );
-      <AuthButtons>
-        {username ? (
-          <DropdownContainer>
-            <DropdownButton>
-              Hola, {username} ({userRole.toUpperCase()})
-            </DropdownButton>
-            <DropdownContent>
-              {/* Opciones según el rol, si es necesario */}
-              {userRole === "admin" && (
-                <Link to="/admin-reports">Reportes</Link>
-              )}
-              {userRole === "employee" && (
-                <Link to="/vehicles-management">Gestión Vehículos</Link>
-              )}
-              {/* ... otras opciones de perfil si las tienes */}
-              <LogoutButton onClick={handleLogout}>Cerrar Sesión</LogoutButton>
-            </DropdownContent>
-          </DropdownContainer>
-        ) : (
-          <>
-            <AuthButton to="/login" className="login-button">
-              Iniciar Sesión
-            </AuthButton>
-            <AuthButton to="/register">Registrarse</AuthButton>
-          </>
-        )}
-      </AuthButtons>
     </Nav>
   );
 };
