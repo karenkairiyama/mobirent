@@ -7,6 +7,8 @@ const {
   createReservation,
   getMyReservations,
   getReservationById,
+  cancelReservation
+
 } = require('../controllers/reservationController');
 
 
@@ -21,7 +23,9 @@ router.route('/').post(protect, createReservation);
 router.route('/myreservations').get(protect, getMyReservations); 
 
 // Detalle reserva
-router.route('/:id').get(protect, getReservationById);             
+
+router.route('/:id').get(protect, getReservationById).delete(protect, cancelReservation);             // COMENTA ESTA LÍNEA
+
 
 // Pagar reserva
 

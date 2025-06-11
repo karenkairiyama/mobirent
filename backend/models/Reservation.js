@@ -58,7 +58,18 @@ const reservationSchema = mongoose.Schema(
     voucherSent: {
       type: Boolean,
       default: false,
-    }
+    },
+
+    // CAMPOS PARA CANCELACIÓN
+    canceledAt: {
+      type: Date,
+      default: null,     // null hasta que se cancele
+    },
+    refundAmount: {
+      type: Number,
+      default: 0,        // 0 hasta que calculemos el reembolso
+      min: 0,
+    },
   },
   {
     timestamps: true, // Esto añade createdAt y updatedAt automáticamente
