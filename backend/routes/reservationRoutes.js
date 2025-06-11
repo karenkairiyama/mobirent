@@ -8,6 +8,7 @@ const {
   getMyReservations,
   getReservationById,
   payReservation,
+  cancelReservation
 } = require('../controllers/reservationController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -29,7 +30,7 @@ router.route('/myreservations').get(protect, getMyReservations); // COMENTA ESTA
 router.route('/:id/pay').post(protect, payReservation);
 
 // Detalle reserva
-router.route('/:id').get(protect, getReservationById);             // COMENTA ESTA LÍNEA
+router.route('/:id').get(protect, getReservationById).delete(protect, cancelReservation);             // COMENTA ESTA LÍNEA
 
 
 

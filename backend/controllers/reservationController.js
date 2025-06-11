@@ -7,6 +7,7 @@ const Branch = require('../models/Branch');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const fakePaymentService = require('../services/fakePaymentService');
+const { calculateRefund } = require('../services/refundService');
 
 // Helper para calcular el costo total
 const calculateTotalCost = (startDate, endDate, vehiclePricePerDay) => {
@@ -186,6 +187,9 @@ const payReservation = asyncHandler(async (req, res) => {
     throw new Error('Reserva no encontrada.');
   }
 
+  console.log('[PAY] Antes de pagar, estado en BD:', reservation.status, ' createdAt:', reservation.createdAt);
+
+
   // 3) Verificar que el usuario propietario sea el que paga
   if (reservation.user._id.toString() !== userId.toString()) {
     res.status(403);
@@ -245,6 +249,7 @@ const payReservation = asyncHandler(async (req, res) => {
 
   // 6a) Si status === 'approved'
   reservation.status = 'confirmed';
+  console.log('[PAY] Branch aprobado: marcando status = confirmed');
   reservation.paymentInfo = {
     transactionId: resultado.transactionId,
     method: paymentData.method,
@@ -252,11 +257,13 @@ const payReservation = asyncHandler(async (req, res) => {
   };
   await reservation.save();
 
+
   // 7) Marcar vehículo como reservado
   const vehiculo = await Vehicle.findById(reservation.vehicle._id);
   if (vehiculo) {
     vehiculo.isReserved = true;
     await vehiculo.save();
+    console.log('[PAY] Después de save(), estado en BD:', reservation.status);
   }
 
   // 8) Enviar voucher por correo
@@ -289,9 +296,87 @@ const payReservation = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Cancelar una reserva y calcular/processar reembolso
+ * @route   DELETE /api/reservations/:id
+ * @access  Private (usuario dueño de la reserva)
+ */
+const cancelReservation = asyncHandler(async (req, res) => {
+  const reservationId = req.params.id;
+  const userId = req.user._id;
+
+  // 1) Buscar la reserva y poblarla con vehicle y user
+  const reservation = await Reservation.findById(reservationId)
+    .populate('vehicle')
+    .populate('user');
+
+  if (!reservation) {
+    res.status(404);
+    throw new Error('Reserva no encontrada.');
+  }
+
+  // 2) Verificar que el usuario propietario sea el que cancela
+  if (reservation.user._id.toString() !== userId.toString()) {
+    res.status(403);
+    throw new Error('No autorizado para cancelar esta reserva.');
+  }
+
+  // 3) Verificar estado permitido (solo "confirmed")
+  if (reservation.status !== 'confirmed') {
+    res.status(400);
+    throw new Error('Solo se pueden cancelar reservas confirmadas.');
+  }
+
+  // 4) Calcular reembolso
+  const refundAmount = calculateRefund(reservation.startDate, reservation.totalCost);
+
+  // 5) Actualizar campos de cancelación
+  reservation.status = 'cancelled';
+  reservation.canceledAt = new Date();
+  reservation.refundAmount = refundAmount;
+  await reservation.save();
+
+  /* 6) Liberar disponibilidad del vehículo
+  const veh = await Vehicle.findById(reservation.vehicle._id);
+  if (veh) {
+    veh.isReserved = false;
+    await veh.save();
+  }*/
+
+  // 7) Enviar email de confirmación de cancelación
+  const refundType =
+    refundAmount === reservation.totalCost ? 'Total' :
+    refundAmount > 0 ? 'Parcial (20%)' : 'Sin reembolso';
+
+  const correoHtml = `
+    <h1>Cancelación de Reserva - Mobirent</h1>
+    <p>Tu reserva <strong>#${reservation.reservationNumber}</strong> ha sido cancelada.</p>
+    <p><strong>Monto de reembolso:</strong> ARS ${refundAmount.toFixed(2)}</p>
+    <p><strong>Tipo de reembolso:</strong> ${refundType}</p>
+  `;
+
+  try {
+    await sendEmail({
+      email: reservation.user.email,
+      subject: `Reserva Cancelada - #${reservation.reservationNumber}`,
+      html: correoHtml
+    });
+  } catch (mailErr) {
+    console.error('Error al enviar email de cancelación:', mailErr);
+  }
+
+  // 8) Respuesta
+  res.status(200).json({
+    message: 'Reserva cancelada con éxito.',
+    refundAmount,
+    refundType
+  });
+});
+
 module.exports = {
   createReservation,
   getMyReservations,
   getReservationById,
-  payReservation
+  payReservation,
+  cancelReservation
 };

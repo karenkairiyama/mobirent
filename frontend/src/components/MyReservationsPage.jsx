@@ -105,6 +105,7 @@ function MyReservationsPage() {
               <Th>Sucursal Devolución</Th>
               <Th>Costo</Th>
               <Th>Estado</Th>
+              <Th>Acciones</Th> 
             </tr>
           </thead>
           <tbody>
@@ -125,6 +126,13 @@ function MyReservationsPage() {
                 <Td>{r.returnBranch.name}</Td>
                 <Td>ARS {r.totalCost.toFixed(2)}</Td>
                 <Td style={{ textTransform: 'capitalize' }}>{r.status}</Td>
+                <Td>
+                 {r.status==='confirmed' && (
+                   <button onClick={() => navigate(`/reservations/${r._id}`)}>
+                     Cancelar Reserva
+                   </button>
+                  )};
+                </Td>
               </Tr>
             ))}
           </tbody>
