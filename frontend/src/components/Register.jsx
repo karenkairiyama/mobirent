@@ -143,6 +143,9 @@ const Message = styled.p`
 `;
 
 function Register() {
+  const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -198,7 +201,16 @@ function Register() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, email, password, dni, dateOfBirth }),
+        body: JSON.stringify({ 
+              name,             // ¡Añadido!
+              lastName,         // ¡Añadido!
+              phoneNumber,      // ¡Añadido!
+              username, 
+              email, 
+              password, 
+              dni, 
+              dateOfBirth 
+          }),
       });
 
       const data = await response.json();
@@ -213,6 +225,9 @@ function Register() {
         setConfirmPassword("");
         setDni("");
         setDateOfBirth("");
+        setName("");         // Añadido
+        setLastName("");     // Añadido
+        setPhoneNumber("");  // Añadido
         setTimeout(() => {
           navigate("/login"); // Redirige a la página de login usando navigate
         }, 2000);
@@ -240,6 +255,39 @@ function Register() {
               name="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="regName">Nombre:</Label>
+            <Input
+              type="text"
+              id="regName"
+              name="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="regLastName">Apellido:</Label>
+            <Input
+              type="text"
+              id="regLastname"
+              name="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="regPhoneNumber">Telefono:</Label>
+            <Input
+              type="text"
+              id="regPhoneNumber"
+              name="phoneNumber"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
               required
             />
           </FormGroup>

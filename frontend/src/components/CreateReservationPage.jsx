@@ -60,7 +60,7 @@ const FormGroup = styled.div`
 `;
 
 const TotalCostDisplay = styled.div`
-    background-color: #e9ecef;
+    background-color:rgb(255, 255, 255);
     padding: 15px;
     border-radius: 8px;
     margin-top: 30px;
@@ -302,7 +302,7 @@ function CreateReservationPage() {
                             id="pickupBranch"
                             value={pickupBranchId}
                             onChange={(e) => setPickupBranchId(e.target.value)}
-                            required
+                            disabled
                         >
                             <option value="">Selecciona una sucursal de retiro</option>
                             {branches.map(branch => (
@@ -338,7 +338,7 @@ function CreateReservationPage() {
                             value={pickupDate}
                             onChange={(e) => setPickupDate(e.target.value)}
                             min={getMinDate()}
-                            required
+                            disabled
                         />
                     </FormGroup>
 
@@ -350,7 +350,7 @@ function CreateReservationPage() {
                             value={returnDate}
                             onChange={(e) => setReturnDate(e.target.value)}
                             min={pickupDate || getMinDate()}
-                            required
+                            disabled
                         />
                     </FormGroup>
 
