@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { getReservationById } from '../api/reservations';
+import { getReservationById, cancelReservation } from '../api/reservations';
+
 
 const Container = styled.div`
   max-width: 700px;
@@ -46,9 +48,37 @@ const BackButton = styled.button`
     background-color: #5a6268;
   }
 `;
+// ========= Modificaciones para botón y feedback =========
+// Botón con estilos según estado y deshabilitado durante carga
+const Button = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== '$cancelled' && prop !== 'disabled'
+})`
+  background-color: ${props => (props.cancelled ? '#6c757d' : '#dc3545')};  /* Si ya está cancelada */
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: ${props => (props.disabled ? 'not-allowed' : 'pointer')};  /* Sin pointer si está deshabilitado */
+  margin-right: 10px;
+  opacity: ${props => (props.disabled ? 0.6 : 1)};  /* Menor opacidad si está desactivado */
+  &:hover {
+    background-color: ${props =>
+      props.disabled 
+        ? '' 
+        : props.cancelled 
+          ? '#5a6268' 
+          : '#c82333'
+    };  /* Hover condicional */
+  }
+`;
 
-const ErrorMessage = styled.p`
-  color: #dc3545;
+// Mensaje de feedback tras acción (error o éxito)
+const Message = styled.p.withConfig({
+  shouldForwardProp: (prop) => prop !== '$error'
+})`
+  margin-top: 20px;
+  font-weight: bold;
+  color: ${props => (props.error ? '#dc3545' : '#28a745')};  /* Rojo=error, verde=éxito */
   text-align: center;
 `;
 
@@ -68,10 +98,12 @@ function ReservationDetailPage() {
   const { id } = useParams(); // este “id” es el _id de la reserva
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
 
   const [reservation, setReservation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [actionMsg, setActionMsg] = useState('');  // Mensaje tras cancelar
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -90,12 +122,9 @@ function ReservationDetailPage() {
       }
     };
     fetchData();
-  }, [id, isAuthenticated, navigate]);
-  // Logs en el renderizado
-  console.log('DEBUG [ReservationDetailPage]: Estado "loading":', loading); // 3. Log del estado de carga
-  console.log('DEBUG [ReservationDetailPage]: Objeto "reservation" en el render:', reservation); // 4. Log del objeto reservation
+  }, [id, isAuthenticated, navigate, location.pathname]);
 
-
+  //Mostrar estado de carga o error
   if (loading) {
     return (
       <Container>
@@ -128,6 +157,34 @@ function ReservationDetailPage() {
   // Formato legible de fechas
   const start = new Date(reservation.startDate).toLocaleDateString('es-AR');
   const end   = new Date(reservation.endDate).toLocaleDateString('es-AR');
+
+
+  const canCancel = reservation.status === 'confirmed';  // Solo cancelar si está confirmada
+
+  // Manejador de la cancelación
+  const handleCancel = async () => {
+    if (!window.confirm('¿Seguro que deseas cancelar esta reserva?')) return;
+    setActionMsg('');   // Limpia mensaje previo
+    setLoading(true);   // Deshabilitar botón. marca como cargando
+    try {
+      const { refundAmount, refundType, message } = await cancelReservation(id);
+      // Actualizar estado localmente para reflejar cambios
+      setReservation(prev => ({
+        ...prev,
+        status: 'cancelled',
+        refundAmount,
+        canceledAt: new Date().toISOString()
+      }));
+      setActionMsg(`${message} (${refundType}, ARS ${refundAmount.toFixed(2)})`);  // Feedback
+    } catch (err) {
+        console.error('[ERROR cancelar]', err.response || err);
+        // Mostrar mensaje del backend si lo hay
+        const msg = err.response?.data?.message || 'Error al cancelar la reserva.';
+        setActionMsg(msg);  // Mensaje de error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Container>
@@ -166,11 +223,6 @@ function ReservationDetailPage() {
         <Value>ARS {reservation.totalCost.toFixed(2)}</Value>
       </Section>
 
-      <Section>
-        <Label>Creada:</Label>{' '}
-        <Value>{new Date(reservation.createdAt).toLocaleString('es-AR')}</Value>
-      </Section>
-
       {reservation.paymentInfo && reservation.paymentInfo.status && (
         <Section>
           <Label>Pago:</Label>{' '}
@@ -190,9 +242,25 @@ function ReservationDetailPage() {
       )}
 
 
-      <BackButton onClick={() => navigate('/my-reservations')}>
+      <div>
+        <Button
+          onClick={handleCancel}
+          disabled={!canCancel || loading}
+          cancelled={reservation.status==='cancelled'}
+        >
+          {reservation.status==='cancelled' ? 'Cancelada' : 'Cancelar Reserva'}
+        </Button>
+        <BackButton onClick={() => navigate('/my-reservations')}>
         Volver a Mi Historial
       </BackButton>
+      </div>
+
+      {actionMsg && (
+        <Message error={reservation.status!=='cancelled'}>
+          {actionMsg}
+        </Message>
+      )}
+
     </Container>
   );
 }
