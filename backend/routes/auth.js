@@ -349,7 +349,7 @@ router.post("/reset-password/:token", async (req, res) => {
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         message:
-          "El token de restablecimiento ha expirado. Por favor, solicita uno nuevo.",
+          "Token de restablecimiento inválido. Por favor, solicita uno nuevo.",
       });
     }
     if (error.name === "JsonWebTokenError") {

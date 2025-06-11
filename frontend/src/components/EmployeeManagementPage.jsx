@@ -273,7 +273,7 @@ function EmployeeManagementPage() {
     };
 
     const handleGoBack = () => {
-        navigate('/admin/dashboard'); // Puedes cambiar esta ruta a donde quieras que regrese el admin
+        navigate('/panel-de-control'); // Puedes cambiar esta ruta a donde quieras que regrese el admin
     };
 
     if (loading) {
@@ -311,7 +311,7 @@ function EmployeeManagementPage() {
                 {message && <Message className={messageType}>{message}</Message>}
 
                 <BackButton onClick={handleGoBack}>
-                    Volver al Dashboard Admin
+                    Volver a Panel de Control
                 </BackButton>
 
                 <EmployeeGrid>

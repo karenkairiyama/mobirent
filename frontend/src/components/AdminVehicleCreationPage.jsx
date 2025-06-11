@@ -358,7 +358,7 @@ function AdminVehicleCreationPage() {
     };
 
     const handleGoBack = () => {
-        navigate('/home');
+        navigate('/panel-de-control');
     };
 
     return (
@@ -459,7 +459,7 @@ function AdminVehicleCreationPage() {
                 </StyledForm>
 
                 <BackButton onClick={handleGoBack}>
-                    Volver a Home
+                    Volver a Panel de Control
                 </BackButton>
             </MainContent>
         </PageContainer>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-//import { payReservation } from '../api/payments';
+import { payReservation } from '../api/payments';
 
 const Container = styled.div`
   max-width: 500px;
@@ -111,15 +111,16 @@ const PaymentPage = () => {
     setLoading(true);
 
 
-    //const paymentData = {
-    //    cardNumber: onlyDigits,
-    //    expiry,
-    //    cvv,
-    //    method: 'credit_card'
-    //};
+    const paymentData = {
+      cardNumber: onlyDigits,
+      expiry,
+      cvv,
+      method: 'credit_card'
+    };
 
     try {
-      //const resp = await payReservation(reservationId, paymentData);
+      const resp = await payReservation(reservationId, paymentData);
+      console.log('Respuesta del backend:', resp.data); // Añade un log para ver la respuesta real
 
       setSuccess('¡Pago aprobado, reserva confirmada!');
       // Luego de 2 s redirigimos a “Mis Reservas”

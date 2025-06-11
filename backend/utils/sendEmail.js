@@ -1,32 +1,46 @@
 // backend/utils/sendEmail.js
+const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
 
-const nodemailer = require('nodemailer');
+dotenv.config(); // Asegúrate de cargar las variables de entorno aquí también si no lo haces globalmente en server.js
 
-const sendEmail = async (options) => {
-  // 1. Crear un transporter de Nodemailer
-  // Usa un servicio como Mailtrap para desarrollo o SendGrid/Mailgun para producción.
-  // Asegúrate de configurar tus variables de entorno para las credenciales.
-  // Ejemplo con Mailtrap (para desarrollo):
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'sandbox.smtp.mailtrap.io', // Por ejemplo, 'smtp.mailtrap.io'
-    port: process.env.EMAIL_PORT || 2525, // Por ejemplo, 2525
-    auth: {
-      user: process.env.EMAIL_USERNAME, // Tu usuario de Mailtrap/servicio SMTP
-      pass: process.env.EMAIL_PASSWORD, // Tu contraseña de Mailtrap/servicio SMTP
-    },
-  });
+// Configuración de Nodemailer
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
-  // 2. Definir las opciones del email
+/**
+ * Función para enviar correos electrónicos.
+ * @param {string} to - Dirección de correo del destinatario.
+ * @param {string} subject - Asunto del correo.
+ * @param {string} htmlContent - Contenido HTML del correo.
+ * @returns {Promise<Object>} Información del resultado del envío del correo.
+ */
+const sendEmail = async (to, subject, htmlContent) => {
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'Mobirent <noreply@mobirent.com>', // Tu email de origen
-    to: options.email, // Email del destinatario
-    subject: options.subject, // Asunto del email
-    html: options.html, // Contenido HTML del email (para el voucher)
+    from: process.env.EMAIL_USER,
+    to: to,
+    subject: subject,
+    html: htmlContent,
   };
 
-  // 3. Enviar el email
-  await transporter.sendMail(mailOptions);
-  console.log(`Email enviado a ${options.email} con asunto: ${options.subject}`);
+  try {
+    console.log(`DEBUG [sendEmail utility]: Intentando transporter.sendMail a ${to}`); // <-- NUEVO LOG 4
+    const info = await transporter.sendMail(mailOptions);
+    console.log('DEBUG [sendEmail utility]: Email enviado con éxito. MessageId: %s', info.messageId); // <-- ¡BUSCA ESTE ID!
+    // console.log('DEBUG [sendEmail utility]: Preview URL: %s', nodemailer.getTestMessageUrl(info)); // Solo si usas ethereal.email
+    console.log('Email enviado: %s', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error al enviar email:', error);
+    // Es buena idea relanzar el error o manejarlo de alguna manera
+    // para que la función que llama sepa que falló el envío.
+    throw new Error('No se pudo enviar el correo electrónico.');
+  }
 };
 
 module.exports = sendEmail;

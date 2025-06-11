@@ -363,7 +363,7 @@ function AdminUserManagementPage() {
     };
 
     const handleGoBack = () => {
-        navigate('/home');
+        navigate('/panel-de-control');
     };
 
     return (
@@ -461,7 +461,7 @@ function AdminUserManagementPage() {
                 </StyledForm>
 
                 <BackButton onClick={handleGoBack}>
-                    Volver a Home
+                    Volver a Panel de Control
                 </BackButton>
 
                 <UserListContainer>

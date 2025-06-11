@@ -67,10 +67,6 @@ const vehicleSchema = new mongoose.Schema({
         ref: 'Branch', // Referencia al modelo 'Branch'
         required: true, // Una sucursal es obligatoria para un vehículo
     },
-    isReserved: {
-        type: Boolean,
-        default: false, // Por defecto, un vehículo no está reservado al crearse
-    },
 }, {
     timestamps: true
 });

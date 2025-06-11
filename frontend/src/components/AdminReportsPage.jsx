@@ -5,7 +5,7 @@ function AdminReportsPage() {
     const navigate = useNavigate(); // Inicializa useNavigate
 
     const handleGoBack = () => {
-        navigate('/home'); // Navega a la ruta /home
+        navigate('/panel-de-control'); // Navega a la ruta /home
     };
 
     return (
@@ -14,7 +14,7 @@ function AdminReportsPage() {
             <p>Aquí se mostrarán los reportes (solo administradores).</p>
             {/* Botón para volver a Home */}
             <button onClick={handleGoBack} style={{ marginTop: '20px' }}>
-                Volver a Home
+                Volver a Panel de Control
             </button>
         </div>
     );

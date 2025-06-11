@@ -30,21 +30,37 @@ const createReservation = asyncHandler(async (req, res) => {
     throw new Error('Faltan datos obligatorios: vehículo, sucursales y fechas.');
   }
 
+    // --- CAMBIOS APLICADOS AQUÍ ---
+  // Normalizar fechas a inicio del día en UTC para comparaciones precisas
   const parsedStartDate = new Date(startDate);
-  parsedStartDate.setHours(0, 0, 0, 0);
   const parsedEndDate = new Date(endDate);
-  parsedEndDate.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
-  if (parsedStartDate < today) {
+  // Obtener el día de hoy en UTC
+  const todayUTC = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
+
+  // Obtener la fecha de inicio de la reserva en UTC
+  const startDateUTC = new Date(Date.UTC(parsedStartDate.getFullYear(), parsedStartDate.getMonth(), parsedStartDate.getDate()));
+
+  // Comparar las fechas normalizadas en UTC
+  if (startDateUTC < todayUTC) { // <--- La comparación se hace con fechas UTC normalizadas
     res.status(400);
     throw new Error('La fecha de inicio no puede ser anterior a hoy.');
   }
-  if (parsedStartDate >= parsedEndDate) {
+  // No necesitas normalizar endDate a UTC para esta validación,
+  // pero sí para la comparación con startDate si las usas así.
+  // Sin embargo, si ambos vienen del Datepicker y se procesan igual, esta es la clave.
+  if (parsedStartDate >= parsedEndDate) { // Esta comparación puede seguir siendo local si ambas son locales
     res.status(400);
     throw new Error('La fecha de fin debe ser posterior a la fecha de inicio.');
   }
+
+  // Es buena práctica asegurarse de que las fechas que guardas en la DB
+  // también sean consistentes (ej. siempre UTC al inicio del día) si eso es lo que esperas.
+  // Si no, mongoose las manejará como ISODate y guardará la hora.
+  // Por simplicidad, si el frontend solo envía 'YYYY-MM-DD', el backend ya lo parsea a las 00:00:00 local.
+  // Mantengamos las fechas que guardamos como vienen si no hay una necesidad explícita de UTC en la DB.
+  // La clave es la comparación.
+  // --- FIN DE CAMBIOS ---
 
   // 2) Verificar existencia y estado de vehículo y sucursales
   const vehicle = await Vehicle.findById(vehicleId);
@@ -149,6 +165,8 @@ const getReservationById = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Reserva no encontrada.');
   }
+  // AÑADE ESTE LOG JUSTO ANTES DE ENVIAR LA RESPUESTA
+  //console.log('Backend sending reservation:', JSON.stringify(reservation, null, 2)); // <-- NUEVO LOG
   res.status(200).json(reservation);
 });
 
@@ -158,6 +176,11 @@ const getReservationById = asyncHandler(async (req, res) => {
  * @access  Private (usuario dueño de la reserva)
  */
 const payReservation = asyncHandler(async (req, res) => {
+  // ESTE ES EL NUEVO LOG DE PRUEBA DEFINITIVO
+  console.log('****** DEBUG: INICIANDO payReservation CONTROLLER ******');
+  console.log('****** DEBUG: Request Params ID:', req.params.id);
+  console.log('****** DEBUG: Request Body:', req.body);
+  console.log('****** DEBUG: User ID:', req.user._id);
   const reservationId = req.params.id;
   const { paymentData } = req.body;
   const userId = req.user._id;
@@ -255,6 +278,7 @@ const payReservation = asyncHandler(async (req, res) => {
     method: paymentData.method,
     status: 'approved'
   };
+  reservation.voucherSent = true; // ¡Asegúrate de marcar esto!
   await reservation.save();
 
 
@@ -268,26 +292,54 @@ const payReservation = asyncHandler(async (req, res) => {
 
   // 8) Enviar voucher por correo
   try {
-    const correoHtml = `
-      <h1>Pago Aprobado - Mobirent</h1>
-      <p>Tu pago ha sido procesado exitosamente. Aquí tu comprobante:</p>
+    const userEmail = reservation.user.email;
+    const userName = reservation.user.userName || reservation.user.email.split('@')[0]; // Usa el username o la parte antes del @
+    const vehicleDetails = reservation.vehicle ? `${reservation.vehicle.brand} ${reservation.vehicle.model} (${reservation.vehicle.licensePlate})` : 'N/A';
+    const pickupBranchName = reservation.pickupBranch ? `${reservation.pickupBranch.name} (${reservation.pickupBranch.address})` : 'N/A';
+    const returnBranchName = reservation.returnBranch ? `${reservation.returnBranch.name} (${reservation.returnBranch.address})` : 'N/A';
+
+    // Formateo de fechas para el email
+    const startDateFormatted = new Date(reservation.startDate).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const endDateFormatted = new Date(reservation.endDate).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const voucherHtml = `
+      <h1>¡Tu Reserva en Mobirent ha sido Confirmada!</h1>
+      <p>Estimado(a) <strong>${userName}</strong>,</p>
+      <p>Nos complace informarte que tu pago ha sido procesado con éxito y tu reserva ha sido confirmada.</p>
+      <p><strong>Detalles de tu Reserva:</strong></p>
       <ul>
-        <li><strong>Reserva:</strong> ${reservation.reservationNumber}</li>
-        <li><strong>Total:</strong> ARS ${reservation.totalCost.toFixed(2)}</li>
-        <li><strong>Transacción:</strong> ${resultado.transactionId}</li>
-        <li><strong>Estado:</strong> Aprobado</li>
+        <li><strong>Número de Reserva:</strong> ${reservation.reservationNumber}</li>
+        <li><strong>Vehículo:</strong> ${vehicleDetails}</li>
+        <li><strong>Fechas de Retiro:</strong> ${startDateFormatted}</li>
+        <li><strong>Fechas de Devolución:</strong> ${endDateFormatted}</li>
+        <li><strong>Sucursal de Retiro:</strong> ${pickupBranchName}</li>
+        <li><strong>Sucursal de Devolución:</strong> ${returnBranchName}</li>
+        <li><strong>Costo Total Pagado:</strong> ARS ${reservation.totalCost.toFixed(2)}</li>
+        <li><strong>Estado:</strong> ${reservation.status.toUpperCase()}</li>
       </ul>
-      <p>Gracias por confiar en Mobirent.</p>
+      <p>Puedes ver los detalles de tu reserva en cualquier momento iniciando sesión en tu cuenta de Mobirent.</p>
+      <p>¡Gracias por elegir Mobirent! ¡Que disfrutes tu viaje!</p>
+      <p>Atentamente, <br/>El equipo de Mobirent</p>
     `;
-    await sendEmail({
-      email: reservation.user.email,
-      subject: `Pago Confirmado - Reserva #${reservation.reservationNumber}`,
-      html: correoHtml
-    });
-    reservation.voucherSent = true;
-    await reservation.save();
+    
+    
+    onsole.log(`DEBUG: Intentando enviar voucher a ${userEmail} para reserva ${reservation.reservationNumber}`); // <-- NUEVO LOG 1
+    console.log(`DEBUG: Asunto del email: Voucher de Confirmación de Reserva - ${reservation.reservationNumber}`); // <-- NUEVO LOG 2
+    // console.log(`DEBUG: Contenido HTML del email: \n${voucherHtml}`); // Descomentar solo si quieres ver el HTML completo en la consola, puede ser muy largo.
+
+
+    // Llama a sendEmail con el formato correcto de argumentos
+    await sendEmail(
+      reservation.user.email, // El primer argumento es 'to' (email del destinatario)
+      `Voucher de Confirmación de Reserva - ${reservation.reservationNumber}`, // El segundo es 'subject'
+      voucherHtml // El tercero es 'htmlContent'
+    );
+
+    console.log(`DEBUG: La función sendEmail terminó de ejecutarse sin error.`); // <-- NUEVO LOG 3
+
+    
   } catch (mailErr) {
-    console.error('Error al enviar voucher:', mailErr);
+    onsole.error('ERROR CRÍTICO: Fallo en el envío de voucher (catch block):', mailErr); // <-- MÁS DETALLADO
   }
 
   return res.status(200).json({
