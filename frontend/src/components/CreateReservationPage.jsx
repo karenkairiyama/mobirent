@@ -200,8 +200,14 @@ function CreateReservationPage() {
     useEffect(() => {
         // Calculate total cost whenever dates or vehicle changes
         if (vehicle && pickupDate && returnDate) {
-            const start = new Date(pickupDate);
-            const end = new Date(returnDate);
+            // --- INICIO DE MODIFICACION PARA FECHAS EN CALCULO ---
+            const [startYear, startMonth, startDay] = pickupDate.split('-').map(Number);
+            const [endYear, endMonth, endDay] = returnDate.split('-').map(Number);
+
+            const start = new Date(startYear, startMonth - 1, startDay, 12, 0, 0); // Mes es 0-indexado
+            const end = new Date(endYear, endMonth - 1, endDay, 12, 0, 0);       // Mes es 0-indexado
+            // --- FIN DE MODIFICACION PARA FECHAS EN CALCULO ---
+            
             
             console.log('Vehicle price per day:', vehicle.pricePerDay);
             console.log('Pickup Date (raw):', pickupDate);
@@ -246,14 +252,28 @@ function CreateReservationPage() {
                 return;
             }
 
+            // --- INICIO DE MODIFICACION PARA FECHAS ---
+            // Parsear las fechas en formato YYYY-MM-DD
+            const [startYear, startMonth, startDay] = pickupDate.split('-').map(Number);
+            const [endYear, endMonth, endDay] = returnDate.split('-').map(Number);
+
+            // Crear objetos Date en la zona horaria local, especificando la hora a mediodía (12:00 PM)
+            // Esto evita que, al convertirse a UTC, la fecha caiga en el día anterior.
+            const pickupDateObject = new Date(startYear, startMonth - 1, startDay, 12, 0, 0); // Month is 0-indexed
+            const returnDateObject = new Date(endYear, endMonth - 1, endDay, 12, 0, 0); // Month is 0-indexed
+
+            // Convertir los objetos Date a formato ISO 8601 (UTC) para enviar al backend
+            const startDateISO = pickupDateObject.toISOString();
+            const endDateISO = returnDateObject.toISOString();
+            // --- FIN DE MODIFICACION PARA FECHAS ---
+
             const reservationData = {
                 vehicleId: vehicle._id,
                 pickupBranchId: pickupBranchId,
                 returnBranchId: returnBranchId,
-                startDate: new Date(pickupDate).toISOString(),
-                endDate: new Date(returnDate).toISOString(),
+                startDate: startDateISO, // <--- USA ESTA NUEVA VARIABLE
+                endDate: endDateISO,     // <--- Y ESTA NUEVA VARIABLE
                 // Payment info is simplified for now, as discussed earlier, or can be added here
-                
             };
 
             console.log('>>> Enviando a backend:', reservationData);
@@ -336,9 +356,7 @@ function CreateReservationPage() {
                             type="date"
                             id="pickupDate"
                             value={pickupDate}
-                            onChange={(e) => setPickupDate(e.target.value)}
-                            min={getMinDate()}
-                            required
+                            disabled 
                         />
                     </FormGroup>
 
@@ -348,9 +366,7 @@ function CreateReservationPage() {
                             type="date"
                             id="returnDate"
                             value={returnDate}
-                            onChange={(e) => setReturnDate(e.target.value)}
-                            min={pickupDate || getMinDate()}
-                            required
+                            disabled 
                         />
                     </FormGroup>
 
