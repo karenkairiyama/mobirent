@@ -60,7 +60,6 @@ const FormGroup = styled.div`
 `;
 
 const TotalCostDisplay = styled.div`
-<<<<<<< HEAD
     background-color:rgb(255, 255, 255);
     padding: 15px;
     border-radius: 8px;
@@ -70,7 +69,6 @@ const TotalCostDisplay = styled.div`
     font-size: 1.5em;
     font-weight: bold;
     color: #28a745;
-=======
   background-color: #e9ecef;
   padding: 15px;
   border-radius: 8px;
@@ -80,7 +78,6 @@ const TotalCostDisplay = styled.div`
   font-size: 1.5em;
   font-weight: bold;
   color: #28a745;
->>>>>>> d8e4a2f3eb74f3b914012e78b1908ebfc848bd85
 `;
 
 const ButtonContainer = styled.div`
@@ -345,97 +342,9 @@ function CreateReservationPage() {
 
   if (loading) {
     return (
-<<<<<<< HEAD
-        <CreateReservationContainer>
-            <FormWrapper>
-                <Title>Confirmar Reserva</Title>
-                <Subtitle>Vehículo seleccionado: **{vehicle?.brand} {vehicle?.model}**</Subtitle>
-
-                <form onSubmit={handleSubmit}>
-                    <FormGroup>
-                        <label htmlFor="vehicleId">ID del Vehículo:</label>
-                        <input type="text" id="vehicleId" value={vehicle?._id || ''} disabled />
-                    </FormGroup>
-
-                    <FormGroup>
-                        <label htmlFor="pickupBranch">Sucursal de Retiro:</label>
-                        <select
-                            id="pickupBranch"
-                            value={pickupBranchId}
-                            onChange={(e) => setPickupBranchId(e.target.value)}
-                            disabled
-                        >
-                            <option value="">Selecciona una sucursal de retiro</option>
-                            {branches.map(branch => (
-                                <option key={branch._id} value={branch._id}>
-                                    {branch.name}
-                                </option>
-                            ))}
-                        </select>
-                    </FormGroup>
-
-                    <FormGroup>
-                        <label htmlFor="returnBranch">Sucursal de Devolución:</label>
-                        <select
-                            id="returnBranch"
-                            value={returnBranchId}
-                            onChange={(e) => setReturnBranchId(e.target.value)}
-                            required
-                        >
-                            <option value="">Selecciona una sucursal de devolución</option>
-                            {branches.map(branch => (
-                                <option key={branch._id} value={branch._id}>
-                                    {branch.name}
-                                </option>
-                            ))}
-                        </select>
-                    </FormGroup>
-
-                    <FormGroup>
-                        <label htmlFor="pickupDate">Fecha de Retiro:</label>
-                        <input
-                            type="date"
-                            id="pickupDate"
-                            value={pickupDate}
-                            onChange={(e) => setPickupDate(e.target.value)}
-                            min={getMinDate()}
-                            disabled
-                        />
-                    </FormGroup>
-
-                    <FormGroup>
-                        <label htmlFor="returnDate">Fecha de Devolución:</label>
-                        <input
-                            type="date"
-                            id="returnDate"
-                            value={returnDate}
-                            onChange={(e) => setReturnDate(e.target.value)}
-                            min={pickupDate || getMinDate()}
-                            disabled
-                        />
-                    </FormGroup>
-
-                    <TotalCostDisplay>
-                        Costo Total Estimado: ${totalCost.toFixed(2)}
-                    </TotalCostDisplay>
-
-                    {error && <ErrorMessage>{error}</ErrorMessage>}
-                    {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
-
-                    <ButtonContainer>
-                        <StyledButton type="submit">Confirmar Reserva</StyledButton>
-                        <StyledButton type="button" className="secondary" onClick={() => navigate(-1)}>
-                            Cancelar
-                        </StyledButton>
-                    </ButtonContainer>
-                </form>
-            </FormWrapper>
-        </CreateReservationContainer>
-=======
       <CreateReservationContainer>
         <p>Cargando datos de la reserva...</p>
       </CreateReservationContainer>
->>>>>>> d8e4a2f3eb74f3b914012e78b1908ebfc848bd85
     );
   }
 
@@ -467,6 +376,22 @@ function CreateReservationPage() {
             />
           </FormGroup>
 
+                    <FormGroup>
+                        <label htmlFor="pickupBranch">Sucursal de Retiro:</label>
+                        <select
+                            id="pickupBranch"
+                            value={pickupBranchId}
+                            onChange={(e) => setPickupBranchId(e.target.value)}
+                            disabled
+                        >
+                            <option value="">Selecciona una sucursal de retiro</option>
+                            {branches.map(branch => (
+                                <option key={branch._id} value={branch._id}>
+                                    {branch.name}
+                                </option>
+                            ))}
+                        </select>
+                    </FormGroup>
           <FormGroup>
             <label htmlFor="pickupBranch">Sucursal de Retiro:</label>
             <select
@@ -501,11 +426,33 @@ function CreateReservationPage() {
             </select>
           </FormGroup>
 
+                    <FormGroup>
+                        <label htmlFor="pickupDate">Fecha de Retiro:</label>
+                        <input
+                            type="date"
+                            id="pickupDate"
+                            value={pickupDate}
+                            onChange={(e) => setPickupDate(e.target.value)}
+                            min={getMinDate()}
+                            disabled
+                        />
+                    </FormGroup>
           <FormGroup>
             <label htmlFor="pickupDate">Fecha de Retiro:</label>
             <input type="date" id="pickupDate" value={pickupDate} disabled />
           </FormGroup>
 
+                    <FormGroup>
+                        <label htmlFor="returnDate">Fecha de Devolución:</label>
+                        <input
+                            type="date"
+                            id="returnDate"
+                            value={returnDate}
+                            onChange={(e) => setReturnDate(e.target.value)}
+                            min={pickupDate || getMinDate()}
+                            disabled
+                        />
+                    </FormGroup>
           <FormGroup>
             <label htmlFor="returnDate">Fecha de Devolución:</label>
             <input type="date" id="returnDate" value={returnDate} disabled />
