@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { useAuth } from "../context/AuthContext.jsx";
+//import { useAuth } from "../context/AuthContext.jsx";
 
 
 // Definimos la URL base de la API usando la variable de entorno de Vite
@@ -402,7 +402,7 @@ const RentButtonStyled = styled.button`
 
 
 function Home() {
-    const { user, logout } = useAuth();
+    //const { user, logout } = useAuth();
     const [vehicles, setVehicles] = useState([]);
     const [branches, setBranches] = useState([]);
     const location = useLocation();
@@ -414,8 +414,8 @@ function Home() {
     const [returnDate, setReturnDate] = useState('');
     const [selectedType, setSelectedType] = useState('');
 
-    const username = user ? user.username : null;
-    const userRole = user ? user.role : null;
+    //const username = user ? user.username : null;
+    //const userRole = user ? user.role : null;
 
     
     const vehicleTypes = ['sedan', 'SUV', 'compacto', 'camioneta', 'deportivo', 'furgoneta', 'otro'];
@@ -528,9 +528,9 @@ function Home() {
         navigate('/home');
     };
 
-    const handleLogout = () => {
-        logout();
-    };
+    //const handleLogout = () => {
+    //    logout();
+    //};
 
     return (
         <HomePageContainer>
@@ -595,71 +595,6 @@ function Home() {
             </FilterSidebar>
 
             <MainContent>
-                {username ? (
-                    <>
-                        <WelcomeTitle>
-                            Bienvenido, <span id="welcomeUsername">{username}</span>!
-                        </WelcomeTitle>
-                        <SubText>
-                            Esta es tu página principal. Tu rol es: **{userRole ? userRole.toUpperCase() : 'N/A'}**
-                        </SubText>
-                    </>
-                ) : (
-                    <>
-                        <WelcomeTitle>Explora Nuestra Flota de Vehículos</WelcomeTitle>
-                        <SubText>
-                            Mira los vehículos disponibles para alquilar. ¡Regístrate o inicia sesión para reservar!
-                        </SubText>
-                    </>
-                )}
-
-                <ButtonGroup>
-                    {username ? (
-                        <>
-                            {(userRole === "employee" || userRole === "admin") && (
-                                <ActionButton to="/vehicles-management">
-                                    Gestión de Vehículos
-                                </ActionButton>
-                            )}
-
-                            {userRole === "employee" && (
-                                <ActionButton to="/create-user-as-employee" className="secondary">
-                                    Cargar Nuevo Cliente
-                                </ActionButton>
-                            )}
-
-                            {userRole === "admin" && (
-                                <>
-                                    <ActionButton to="/admin-reports" className="secondary">
-                                        Ver Reportes Admin
-                                    </ActionButton>
-                                    <ActionButton to="/admin-users" className="secondary">
-                                        Crear Usuarios
-                                    </ActionButton>
-                                    <ActionButton to="/admin-create-vehicle" className="secondary">
-                                        Crear Nuevo Vehículo
-                                    </ActionButton>
-                                    <ActionButton to="/admin-employees" className="secondary">
-                                        Gestionar Empleados
-                                    </ActionButton>
-                                </>
-                            )}
-                            <LogoutButton onClick={handleLogout}>
-                                Cerrar Sesión
-                            </LogoutButton>
-                        </>
-                    ) : (
-                        <>
-                            <ActionButton to="/login">
-                                Iniciar Sesión
-                            </ActionButton>
-                            <ActionButton to="/register" className="secondary">
-                                Registrarse
-                            </ActionButton>
-                        </>
-                    )}
-                </ButtonGroup>
-
                 <h2>Vehículos Disponibles para Alquilar:</h2>
                 {vehicles.length === 0 ? (
                     <SubText>No hay vehículos disponibles en este momento con los filtros seleccionados.</SubText>
