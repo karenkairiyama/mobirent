@@ -235,7 +235,6 @@ function LandingPage() {
                             </option>
                         ))}
                     </select>
-                    {error && <p style={{ color: 'red', fontSize: '0.9em', marginTop: '5px' }}>{error}</p>}
                 </InputGroup>
 
                 <InputGroup>

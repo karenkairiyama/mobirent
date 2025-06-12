@@ -185,7 +185,7 @@ const getAvailableVehicles = async (req, res) => {
 
     // Si se proporciona un tipo de vehículo, agregarlo al filtro
     if (type) {
-      filter.branch = branchId; // <-- CAMBIO 4: Usa branch en el filtro
+      filter.type = type; // <-- CAMBIO 4: Usa branch en el filtro
     }
 
     let reservedVehicleIds = [];
