@@ -11,8 +11,8 @@ const RegisterPageContainer = styled.div`
   height: 100vh;
   background: linear-gradient(
     to right,
-    #6a11cb 0%,
-    #2575fc 100%
+rgb(86, 97, 255) 0%,
+rgb(0, 64, 175) 100%
   ); /* Gradiente azul/morado */
   display: flex;
   justify-content: center;
@@ -39,7 +39,7 @@ const RegisterFormWrapper = styled.div`
   z-index: 1;
   overflow-y: auto; /* Permite scroll si el contenido es demasiado largo en pantallas pequeñas */
   max-height: calc(
-    100vh - 120px
+    90vh - 120px
   ); /* Ajusta para que el formulario no exceda la altura de la pantalla */
 `;
 
@@ -52,7 +52,7 @@ const Title = styled.h1`
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Espacio entre los grupos de formulario */
+  gap: 3px; /* Espacio entre los grupos de formulario */
 `;
 
 const FormGroup = styled.div`
