@@ -250,6 +250,9 @@ const BackButton = styled.button`
 `;
 
 function AdminUserManagementPage() {
+  const [name, setName] = useState(""); // <--- NUEVO
+  const [lastName, setLastName] = useState(""); // <--- NUEVO
+  const [phoneNumber, setPhoneNumber] = useState(""); // <--- NUEVO
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -302,6 +305,9 @@ function AdminUserManagementPage() {
     setMessageType("");
 
     if (
+      !name ||
+      !lastName ||
+      !phoneNumber ||
       !username ||
       !email ||
       !password ||
@@ -309,6 +315,7 @@ function AdminUserManagementPage() {
       !dni ||
       !dateOfBirth
     ) {
+      // <--- NUEVO
       setMessage("Todos los campos son obligatorios.");
       setMessageType("error");
       return;
@@ -350,13 +357,16 @@ function AdminUserManagementPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          name,
+          lastName,
+          phoneNumber,
           username,
           email,
           password,
           dni,
           dateOfBirth,
           role,
-        }),
+        }), // NUEVO
       });
 
       const data = await response.json();
@@ -365,6 +375,9 @@ function AdminUserManagementPage() {
         setMessage(data.message || "Usuario creado exitosamente.");
         setMessageType("success");
         // Limpiar campos del formulario
+        setName(""); // <--- NUEVO
+        setLastName(""); // <--- NUEVO
+        setPhoneNumber(""); // <--- NUEVO
         setUsername("");
         setEmail("");
         setPassword("");
@@ -398,6 +411,42 @@ function AdminUserManagementPage() {
 
         <StyledForm onSubmit={handleSubmit}>
           <h2>Crear Nuevo Usuario</h2>
+          {/* CAMPOS DEL FORMULARIO: AÑADIR INPUTS PARA LOS NUEVOS CAMPOS */}
+          <FormGroup>
+            <label htmlFor="adminName">Nombre:</label>
+            <input
+              type="text"
+              id="adminName"
+              name="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <label htmlFor="adminLastName">Apellido:</label>
+            <input
+              type="text"
+              id="adminLastName"
+              name="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <label htmlFor="adminPhoneNumber">Teléfono:</label>
+            <input
+              type="text" // Usar text para permitir el pattern, pero validar con regex
+              id="adminPhoneNumber"
+              name="phoneNumber"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              required
+              pattern="^\d{8,15}$" // Validación HTML5 para formato
+              title="El TELÉFONO debe contener entre 8 y 15 dígitos numéricos."
+            />
+          </FormGroup>
           <FormGroup>
             <label htmlFor="adminUsername">Usuario:</label>
             <input
@@ -477,8 +526,7 @@ function AdminUserManagementPage() {
             >
               <option value="employee">Empleado</option>
               <option value="user">Usuario Normal</option>
-              <option value="admin">Administrador</option>{" "}
-              {/* solo por si necesitabamos crear admin, sino se borra esta linea listo */}
+              {/*<option value="admin">Administrador</option>  solo por si necesitabamos crear admin, sino se borra esta linea listo */}
             </select>
           </FormGroup>
           <SubmitButton type="submit">Crear Usuario</SubmitButton>
@@ -496,6 +544,18 @@ function AdminUserManagementPage() {
               {users.map((user) => (
                 <UserCard key={user._id} className={`role-${user.role}`}>
                   <h3>{user.username}</h3>
+                  {/* Mostrar los nuevos campos en la lista */}
+                  <p>
+                    Nombre:{" "}
+                    <strong>
+                      {user.name} {user.lastName}
+                    </strong>
+                  </p>{" "}
+                  {/* <--- MODIFICADO */}
+                  <p>
+                    Teléfono: <strong>{user.phoneNumber}</strong>
+                  </p>{" "}
+                  {/* <--- NUEVO */}
                   <p>
                     Email: <strong>{user.email}</strong>
                   </p>
@@ -512,7 +572,6 @@ function AdminUserManagementPage() {
                     Rol:{" "}
                     {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                   </span>
-                  {/* Aquí podrías añadir botones para editar o eliminar si implementas esas funcionalidades */}
                 </UserCard>
               ))}
             </UserGrid>

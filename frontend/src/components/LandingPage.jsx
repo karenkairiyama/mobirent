@@ -160,45 +160,47 @@ function LandingPage() {
     fetchBranches();
   }, []);
 
-  const handleSearch = () => {
-    // Limpiar cualquier error anterior
-    setError(null);
+    const handleSearch = () => {
+        setError(null); // Limpiar cualquier error anterior
 
-    // --- VALIDACIÓN DE FECHAS ---
-    if (pickupDate && returnDate) {
-      const pDate = new Date(pickupDate);
-      const rDate = new Date(returnDate);
+        // Si la sucursal también es obligatoria para la búsqueda (como tu select tiene 'required')
+        if (!selectedBranch) {
+            setError('Por favor, selecciona una sucursal de retiro.');
+            return;
+        }
 
-      // Resetea la hora para comparar solo las fechas
-      pDate.setHours(0, 0, 0, 0);
-      rDate.setHours(0, 0, 0, 0);
+        // NUEVO: Validación para asegurar que AMBAS fechas estén seleccionadas al inicio
+        if (!pickupDate || !returnDate) {
+            setError('Por favor, selecciona tanto la fecha de retiro como la de devolución.');
+            return; // Detiene la función
+        }
 
-      if (rDate < pDate) {
-        setError(
-          "La fecha de devolución no puede ser anterior a la fecha de retiro."
-        );
-        return; // Detiene la función si hay un error
-      }
-    } else if (pickupDate && !returnDate) {
-      setError("Por favor, selecciona una fecha de devolución.");
-      return;
-    } else if (!pickupDate && returnDate) {
-      setError("Por favor, selecciona una fecha para retirar el auto.");
-      return;
-    }
-    // Redirige a la página Home con los parámetros de búsqueda en la URL
-    const params = new URLSearchParams();
-    if (selectedBranch) {
-      params.append("branchId", selectedBranch);
-    }
-    if (pickupDate) {
-      params.append("pickupDate", pickupDate);
-    }
-    if (returnDate) {
-      params.append("returnDate", returnDate);
-    }
-    navigate(`/home?${params.toString()}`);
-  };
+        // Lógica de validación existente para el orden de las fechas
+        const pDate = new Date(pickupDate);
+        const rDate = new Date(returnDate);
+
+        // Resetea la hora para comparar solo las fechas
+        pDate.setHours(0, 0, 0, 0);
+        rDate.setHours(0, 0, 0, 0);
+
+        if (rDate <= pDate) {
+            setError('La fecha de devolución debe ser mayor a la fecha de retiro.');
+            return; // Detiene la función si hay un error
+        }
+
+        // Redirige a la página Home con los parámetros de búsqueda en la URL
+        const params = new URLSearchParams();
+        if (selectedBranch) {
+            params.append('branchId', selectedBranch);
+        }
+        if (pickupDate) {
+            params.append('pickupDate', pickupDate);
+        }
+        if (returnDate) {
+            params.append('returnDate', returnDate);
+        }
+        navigate(`/home?${params.toString()}`);
+    };
 
   // Obtener la fecha actual para establecer la fecha mínima en el selector
   const getMinDate = () => {
@@ -217,44 +219,48 @@ function LandingPage() {
         <Subtitle>Alquilar un auto jamás ha sido más fácil</Subtitle>
       </ContentWrapper>
 
-      <SearchBar>
-        <InputGroup>
-          <label htmlFor="branch">Sucursal de retiro:</label>
-          <select
-            id="branch"
-            value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
-          >
-            <option value="">Selecciona una sucursal</option>
-            {branches.map((branch) => (
-              <option key={branch._id} value={branch._id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </InputGroup>
+            <SearchBar>
+                <InputGroup>
+                    <label htmlFor="branch">Sucursal de retiro:</label>
+                    <select
+                        id="branch"
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        required
+                    >
+                        <option value="">Selecciona una sucursal</option>
+                        {branches.map(branch => (
+                            <option key={branch._id} value={branch._id}>
+                                {branch.name}
+                            </option>
+                        ))}
+                    </select>
+                    {error && <p style={{ color: 'red', fontSize: '0.9em', marginTop: '5px' }}>{error}</p>}
+                </InputGroup>
 
-        <InputGroup>
-          <label htmlFor="pickupDate">Fecha para retirar el auto:</label>
-          <input
-            type="date"
-            id="pickupDate"
-            value={pickupDate}
-            onChange={(e) => setPickupDate(e.target.value)}
-            min={getMinDate()} // Establece la fecha mínima como hoy
-          />
-        </InputGroup>
+                <InputGroup>
+                    <label htmlFor="pickupDate">Fecha para retirar el auto:</label>
+                    <input
+                        type="date"
+                        id="pickupDate"
+                        value={pickupDate}
+                        onChange={(e) => setPickupDate(e.target.value)}
+                        min={getMinDate()} // Establece la fecha mínima como hoy
+                        required
+                    />
+                </InputGroup>
 
-        <InputGroup>
-          <label htmlFor="returnDate">Fecha de devolución:</label>
-          <input
-            type="date"
-            id="returnDate"
-            value={returnDate}
-            onChange={(e) => setReturnDate(e.target.value)}
-            min={pickupDate || getMinDate()} // La fecha de devolución no puede ser anterior a la de retiro
-          />
-        </InputGroup>
+                <InputGroup>
+                    <label htmlFor="returnDate">Fecha de devolución:</label>
+                    <input
+                        type="date"
+                        id="returnDate"
+                        value={returnDate}
+                        onChange={(e) => setReturnDate(e.target.value)}
+                        min={pickupDate || getMinDate()} // La fecha de devolución no puede ser anterior a la de retiro
+                        required
+                    />
+                </InputGroup>
 
         <SearchButton onClick={handleSearch}>Buscar</SearchButton>
         {error && <ErrorMessage>{error}</ErrorMessage>}

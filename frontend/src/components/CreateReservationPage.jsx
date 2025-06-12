@@ -60,6 +60,15 @@ const FormGroup = styled.div`
 `;
 
 const TotalCostDisplay = styled.div`
+    background-color:rgb(255, 255, 255);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #28a745;
   background-color: #e9ecef;
   padding: 15px;
   border-radius: 8px;
@@ -367,6 +376,22 @@ function CreateReservationPage() {
             />
           </FormGroup>
 
+                    <FormGroup>
+                        <label htmlFor="pickupBranch">Sucursal de Retiro:</label>
+                        <select
+                            id="pickupBranch"
+                            value={pickupBranchId}
+                            onChange={(e) => setPickupBranchId(e.target.value)}
+                            disabled
+                        >
+                            <option value="">Selecciona una sucursal de retiro</option>
+                            {branches.map(branch => (
+                                <option key={branch._id} value={branch._id}>
+                                    {branch.name}
+                                </option>
+                            ))}
+                        </select>
+                    </FormGroup>
           <FormGroup>
             <label htmlFor="pickupBranch">Sucursal de Retiro:</label>
             <select
@@ -401,11 +426,33 @@ function CreateReservationPage() {
             </select>
           </FormGroup>
 
+                    <FormGroup>
+                        <label htmlFor="pickupDate">Fecha de Retiro:</label>
+                        <input
+                            type="date"
+                            id="pickupDate"
+                            value={pickupDate}
+                            onChange={(e) => setPickupDate(e.target.value)}
+                            min={getMinDate()}
+                            disabled
+                        />
+                    </FormGroup>
           <FormGroup>
             <label htmlFor="pickupDate">Fecha de Retiro:</label>
             <input type="date" id="pickupDate" value={pickupDate} disabled />
           </FormGroup>
 
+                    <FormGroup>
+                        <label htmlFor="returnDate">Fecha de Devolución:</label>
+                        <input
+                            type="date"
+                            id="returnDate"
+                            value={returnDate}
+                            onChange={(e) => setReturnDate(e.target.value)}
+                            min={pickupDate || getMinDate()}
+                            disabled
+                        />
+                    </FormGroup>
           <FormGroup>
             <label htmlFor="returnDate">Fecha de Devolución:</label>
             <input type="date" id="returnDate" value={returnDate} disabled />

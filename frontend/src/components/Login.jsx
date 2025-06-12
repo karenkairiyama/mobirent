@@ -203,8 +203,8 @@ function Login() {
           // Nota: Asegúrate de que tu función 'login' de useAuth pueda manejar todos los campos
           // que tu backend envía (token, username, role, _id, dni, dateOfBirth).
           // Los estoy pasando aquí asumiendo que tu backend los envía.
-          const { token, username, role, _id, dni, dateOfBirth } = data;
-          login(token, username, role, _id, dni, dateOfBirth); // Usa tu función de login del contexto
+          const { token, username, role, _id, dni, dateOfBirth, name, lastName, phoneNumber } = data;
+          login(token, username, role, _id, dni, dateOfBirth, name, lastName, phoneNumber); // Usa tu función de login del contexto
 
           setMessage(
             data.message || "Inicio de sesión exitoso. Redirigiendo..."
@@ -256,8 +256,8 @@ function Login() {
 
       if (response.ok) {
         // Si la verificación 2FA es exitosa, el backend devolverá el JWT
-        const { token, username, role, _id, dni, dateOfBirth } = data;
-        login(token, username, role, _id, dni, dateOfBirth); // Usa tu función de login del contexto
+        const { token, username, role, _id, dni, dateOfBirth, name, lastName, phoneNumber } = data;
+        login(token, username, role, _id, dni, dateOfBirth, name, lastName, phoneNumber); // Usa tu función de login del contexto
 
         setMessage(data.message || "Verificación 2FA exitosa. Redirigiendo...");
         setMessageType("success");
