@@ -14,8 +14,8 @@ const LoginPageContainer = styled.div`
   height: 100vh;
   background: linear-gradient(
     to right,
-    #6a11cb 0%,
-    #2575fc 100%
+rgb(86, 97, 255) 0%,
+rgb(0, 64, 175) 100%
   ); /* Un gradiente azul/morado atractivo */
   // O un color sólido: background-color: #f0f2f5; /* Un gris claro suave */
   display: flex;
@@ -40,6 +40,7 @@ const LoginPageContainer = styled.div`
 `;
 
 const LoginFormWrapper = styled.div`
+  color: #000;
   background-color: rgba(
     255,
     255,
@@ -62,12 +63,14 @@ const Title = styled.h1`
 `;
 
 const Form = styled.form`
+  color:#000;
   display: flex;
   flex-direction: column;
   gap: 20px;
 `;
 
 const FormGroup = styled.div`
+  color: #000;
   text-align: left;
   margin-bottom: 10px;
 `;
@@ -321,12 +324,12 @@ function Login() {
         ) : (
           // Mostrar formulario de 2FA si se requiere
           <Form onSubmit={handleTwoFactorSubmit}>
-            <p>
+            <p style={{ color: 'black', fontSize: '16px'}}>
               Se ha enviado un código de verificación a su email:{" "}
               <strong>{userEmailFor2FA}</strong>
             </p>
             <FormGroup>
-              <Label htmlFor="twoFactorCode">Código de Verificación:</Label>
+              <Label htmlFor="twoFactorCode" >Código de Verificación:</Label>
               <Input
                 type="text"
                 id="twoFactorCode"
