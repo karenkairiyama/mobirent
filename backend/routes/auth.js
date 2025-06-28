@@ -24,103 +24,130 @@ const generateTwoFactorCode = () => {
 
 // Ruta de Registro de Usuario
 router.post("/register", async (req, res) => {
-    // CAMBIO 1: EXTRAER LOS NUEVOS CAMPOS DEL BODY
-    const { name, lastName, phoneNumber, username, email, password, dni, dateOfBirth } = req.body;
+  // CAMBIO 1: EXTRAER LOS NUEVOS CAMPOS DEL BODY
+  const {
+    name,
+    lastName,
+    phoneNumber,
+    username,
+    email,
+    password,
+    dni,
+    dateOfBirth,
+  } = req.body;
 
-    // CAMBIO 2: AÑADIR LOS NUEVOS CAMPOS A LA VALIDACIÓN
-    if (!name || !lastName || !phoneNumber || !username || !email || !password || !dni || !dateOfBirth) {
+  // CAMBIO 2: AÑADIR LOS NUEVOS CAMPOS A LA VALIDACIÓN
+  if (
+    !name ||
+    !lastName ||
+    !phoneNumber ||
+    !username ||
+    !email ||
+    !password ||
+    !dni ||
+    !dateOfBirth
+  ) {
+    return res.status(400).json({
+      message:
+        "Por favor, introduce nombre, apellido, teléfono, usuario, email, contraseña, DNI y fecha de nacimiento.",
+    });
+  }
+
+  // Validación de mayoría de edad (la tienes correctamente, sin cambios aquí)
+  const today = new Date();
+  const dob = new Date(dateOfBirth);
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  if (age < 18) {
+    return res
+      .status(400)
+      .json({ message: "Debes ser mayor de 18 años para registrarte." });
+  }
+
+  try {
+    // Validación de unicidad de username, email y DNI (tienes esto correctamente, sin cambios aquí)
+    const userExists = await User.findOne({ username });
+    if (userExists) {
+      return res
+        .status(400)
+        .json({ message: "El nombre de usuario ya existe." });
+    }
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      return res.status(400).json({ message: "El email ya está registrado." });
+    }
+    const dniExists = await User.findOne({ dni });
+    if (dniExists) {
+      return res.status(400).json({ message: "El DNI ya está registrado." });
+    }
+    // Si phoneNumber es unique en tu esquema, aquí necesitarías agregar:
+    // const phoneNumberExists = await User.findOne({ phoneNumber });
+    // if (phoneNumberExists) { return res.status(400).json({ message: "El número de teléfono ya está registrado." }); }
+
+    // CAMBIO 3: PASAR LOS NUEVOS CAMPOS AL CREATE
+    const user = await User.create({
+      name, // AÑADIDO
+      lastName, // AÑADIDO
+      phoneNumber, // AÑADIDO
+      username,
+      email,
+      password,
+      dni,
+      dateOfBirth,
+      // El rol se asigna por defecto en el modelo si no se especifica aquí
+    });
+
+    if (user) {
+      // CAMBIO 4: INCLUIR LOS NUEVOS CAMPOS EN LA RESPUESTA
+      res.status(201).json({
+        _id: user._id,
+        name: user.name, // AÑADIDO
+        lastName: user.lastName, // AÑADIDO
+        phoneNumber: user.phoneNumber, // AÑADIDO
+        username: user.username,
+        email: user.email,
+        dni: user.dni,
+        dateOfBirth: user.dateOfBirth,
+        role: user.role,
+        token: generateToken(user._id),
+        message: "Registro exitoso.",
+      });
+    } else {
+      res.status(400).json({ message: "Datos de usuario inválidos." });
+    }
+  } catch (error) {
+    console.error("Error al registrar usuario:", error);
+    // Manejo de errores específicos para unicidad de DNI y otros campos
+    if (error.code === 11000) {
+      if (error.keyPattern && error.keyPattern.username) {
         return res
-            .status(400)
-            .json({ message: "Por favor, introduce nombre, apellido, teléfono, usuario, email, contraseña, DNI y fecha de nacimiento." });
-    }
-
-    // Validación de mayoría de edad (la tienes correctamente, sin cambios aquí)
-    const today = new Date();
-    const dob = new Date(dateOfBirth);
-    let age = today.getFullYear() - dob.getFullYear();
-    const m = today.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-        age--;
-    }
-    if (age < 18) {
+          .status(400)
+          .json({ message: "El nombre de usuario ya está en uso." });
+      }
+      if (error.keyPattern && error.keyPattern.email) {
         return res
-            .status(400)
-            .json({ message: "Debes ser mayor de 18 años para registrarte." });
+          .status(400)
+          .json({ message: "El email ya está registrado." });
+      }
+      if (error.keyPattern && error.keyPattern.dni) {
+        return res.status(400).json({ message: "El DNI ya está registrado." });
+      }
+      if (error.keyPattern && error.keyPattern.phoneNumber) {
+        // Si hiciste phoneNumber unique
+        return res
+          .status(400)
+          .json({ message: "El número de teléfono ya está registrado." });
+      }
     }
-
-    try {
-        // Validación de unicidad de username, email y DNI (tienes esto correctamente, sin cambios aquí)
-        const userExists = await User.findOne({ username });
-        if (userExists) {
-            return res.status(400).json({ message: "El nombre de usuario ya existe." });
-        }
-        const emailExists = await User.findOne({ email });
-        if (emailExists) {
-            return res.status(400).json({ message: "El email ya está registrado." });
-        }
-        const dniExists = await User.findOne({ dni });
-        if (dniExists) {
-            return res.status(400).json({ message: "El DNI ya está registrado." });
-        }
-        // Si phoneNumber es unique en tu esquema, aquí necesitarías agregar:
-        // const phoneNumberExists = await User.findOne({ phoneNumber });
-        // if (phoneNumberExists) { return res.status(400).json({ message: "El número de teléfono ya está registrado." }); }
-
-
-        // CAMBIO 3: PASAR LOS NUEVOS CAMPOS AL CREATE
-        const user = await User.create({
-            name,         // AÑADIDO
-            lastName,     // AÑADIDO
-            phoneNumber,  // AÑADIDO
-            username,
-            email,
-            password,
-            dni,
-            dateOfBirth,
-            // El rol se asigna por defecto en el modelo si no se especifica aquí
-        });
-
-        if (user) {
-            // CAMBIO 4: INCLUIR LOS NUEVOS CAMPOS EN LA RESPUESTA
-            res.status(201).json({
-                _id: user._id,
-                name: user.name,         // AÑADIDO
-                lastName: user.lastName, // AÑADIDO
-                phoneNumber: user.phoneNumber, // AÑADIDO
-                username: user.username,
-                email: user.email,
-                dni: user.dni,
-                dateOfBirth: user.dateOfBirth,
-                role: user.role,
-                token: generateToken(user._id),
-                message: "Registro exitoso.",
-            });
-        } else {
-            res.status(400).json({ message: "Datos de usuario inválidos." });
-        }
-    } catch (error) {
-        console.error("Error al registrar usuario:", error);
-        // Manejo de errores específicos para unicidad de DNI y otros campos
-        if (error.code === 11000) {
-            if (error.keyPattern && error.keyPattern.username) {
-                return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
-            }
-            if (error.keyPattern && error.keyPattern.email) {
-                return res.status(400).json({ message: "El email ya está registrado." });
-            }
-            if (error.keyPattern && error.keyPattern.dni) {
-                return res.status(400).json({ message: "El DNI ya está registrado." });
-            }
-            if (error.keyPattern && error.keyPattern.phoneNumber) { // Si hiciste phoneNumber unique
-                return res.status(400).json({ message: "El número de teléfono ya está registrado." });
-            }
-        }
-        if (error.name === "ValidationError") {
-             const messages = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({ message: messages.join(', ') });
-        }
-        res.status(500).json({ message: `Error del servidor: ${error.message}` });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((val) => val.message);
+      return res.status(400).json({ message: messages.join(", ") });
     }
+    res.status(500).json({ message: `Error del servidor: ${error.message}` });
+  }
 });
 
 // ---------------------------------------------------
@@ -166,18 +193,19 @@ router.post("/verify-2fa", async (req, res) => {
 
     // 5. Enviar el token y la información del usuario al frontend
     res.status(200).json({
-            message: "Verificación de dos factores exitosa. Inicio de sesión completado.",
-            _id: user._id,
-            name: user.name,           // AÑADIDO
-            lastName: user.lastName,     // AÑADIDO
-            phoneNumber: user.phoneNumber, // AÑADIDO
-            username: user.username,
-            email: user.email,
-            dni: user.dni,
-            dateOfBirth: user.dateOfBirth,
-            role: user.role,
-            token: token,
-        });
+      message:
+        "Verificación de dos factores exitosa. Inicio de sesión completado.",
+      _id: user._id,
+      name: user.name, // AÑADIDO
+      lastName: user.lastName, // AÑADIDO
+      phoneNumber: user.phoneNumber, // AÑADIDO
+      username: user.username,
+      email: user.email,
+      dni: user.dni,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      token: token,
+    });
   } catch (error) {
     console.error("Error en /verify-2fa:", error);
     res.status(500).json({
@@ -188,84 +216,86 @@ router.post("/verify-2fa", async (req, res) => {
 
 // Ruta de Login de Usuario. Agregue la funcion de verificacion 2FA
 router.post("/login", async (req, res) => {
-    console.log("!!! Petición recibida en /api/auth/login !!!"); // <-- AÑADE ESTA LÍNEA
-    const { email, password } = req.body;
+  console.log("!!! Petición recibida en /api/auth/login !!!"); // <-- AÑADE ESTA LÍNEA
+  const { email, password } = req.body;
 
-      if (!email || !password) {
+  if (!email || !password) {
     return res
       .status(400)
       .json({ message: "Por favor, introduce email y contraseña." });
+  }
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "Credenciales inválidas." });
     }
-    try {
-        const user = await User.findOne({ email });
 
-        if (!user) {
-            return res.status(400).json({ message: "Credenciales inválidas." });
-        }
+    const isMatch = await user.matchPassword(password);
 
-        const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Credenciales inválidas." });
+    }
 
-        if (!isMatch) {
-            return res.status(400).json({ message: "Credenciales inválidas." });
-        }
+    if (user.role === "employee" && user.status === false) {
+      return res
+        .status(403)
+        .json({ message: "Error inesperado... Contacta al administrador" });
+    }
 
-        if (user.role === 'employee' && user.status === false) {
-            return res.status(403).json({ message: 'Error inesperado... Contacta al administrador' });
-        }
+    // --- Lógica 2FA para Admin --- (Sin cambios relevantes aquí para los nuevos campos)
+    if (user.role === "admin") {
+      const twoFactorCode = generateTwoFactorCode();
+      const twoFactorExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-        // --- Lógica 2FA para Admin --- (Sin cambios relevantes aquí para los nuevos campos)
-        if (user.role === "admin") {
-            const twoFactorCode = generateTwoFactorCode();
-            const twoFactorExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.twoFactorCode = twoFactorCode;
+      user.twoFactorExpires = twoFactorExpires;
+      await user.save();
 
-            user.twoFactorCode = twoFactorCode;
-            user.twoFactorExpires = twoFactorExpires;
-            await user.save();
-
-            // Envío del email con el código 2FA
-          const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: user.email,
-            subject: "Código de Verificación para Mobirent (Inicio de Sesión)",
-            html: `
+      // Envío del email con el código 2FA
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Código de Verificación para Mobirent (Inicio de Sesión)",
+        html: `
                 <h1>Código de Verificación para Mobirent</h1>
                 <p>Tu código de verificación para iniciar sesión como administrador es: <strong>${twoFactorCode}</strong></p>
                 <p>Este código es válido por 10 minutos.</p>
                 <p>Si no solicitaste esto, por favor ignora este email.</p>
                 <p>Atentamente, <br/>El equipo de Mobirent</p>
             `,
-          };
+      };
 
-          await transporter.sendMail(mailOptions);
+      await transporter.sendMail(mailOptions);
 
-          // Respuesta al frontend indicando que se requiere 2FA
-          return res.status(200).json({
-            requiresTwoFactor: true,
-            message: "Código de verificación enviado a tu email.",
-            email: user.email, // Enviar el email es útil para el frontend
-          });
-        }
-        // --- Fin Lógica 2FA ---
-
-        // Si el usuario no es 'admin' o si ya pasó la verificación 2FA,
-        // se envía el token JWT y los datos del usuario.
-        res.json({
-            message: "Inicio de sesión exitoso.",
-            _id: user._id,
-            name: user.name,           // AÑADIDO
-            lastName: user.lastName,     // AÑADIDO
-            phoneNumber: user.phoneNumber, // AÑADIDO
-            username: user.username,
-            email: user.email,
-            dni: user.dni,
-            dateOfBirth: user.dateOfBirth,
-            role: user.role,
-            token: generateToken(user._id),
-        });
-    } catch (error) {
-        console.error("Error en /login:", error);
-        res.status(500).json({ message: "Error interno del servidor." });
+      // Respuesta al frontend indicando que se requiere 2FA
+      return res.status(200).json({
+        requiresTwoFactor: true,
+        message: "Código de verificación enviado a tu email.",
+        email: user.email, // Enviar el email es útil para el frontend
+      });
     }
+    // --- Fin Lógica 2FA ---
+
+    // Si el usuario no es 'admin' o si ya pasó la verificación 2FA,
+    // se envía el token JWT y los datos del usuario.
+    res.json({
+      message: "Inicio de sesión exitoso.",
+      _id: user._id,
+      name: user.name, // AÑADIDO
+      lastName: user.lastName, // AÑADIDO
+      phoneNumber: user.phoneNumber, // AÑADIDO
+      username: user.username,
+      email: user.email,
+      dni: user.dni,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error("Error en /login:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
 });
 
 // ---------------------------------------------------

@@ -2,10 +2,450 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { useAuth } from "../context/AuthContext";
 import axiosInstance from "../api/axiosInstance"; // Asegúrate de que esta ruta sea correcta
 
-// ... (Styled Components, no cambian aquí) ...
+// **** INICIO: Styled Components ****
+// ¡Es CRUCIAL que estos Styled Components estén definidos FUERA de la función VehicleManagementPage!
+const PageContainer = styled.div`
+  background-color: #f0f2f5;
+  min-height: 100vh;
+  padding: 80px 20px 40px;
+  box-sizing: border-box;
+  color: #333;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
 
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding-top: 20px;
+    align-items: center;
+  }
+`;
+
+const MainContent = styled.div`
+  flex-grow: 1;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 15px;
+    margin-top: 20px;
+    width: 100%;
+  }
+`;
+
+const PageTitle = styled.h1`
+  font-size: 2.8em;
+  color: #007bff;
+  margin-bottom: 10px;
+  text-align: center;
+
+  @media (max-width: 768px) {
+    font-size: 2em;
+  }
+`;
+
+const PageSubText = styled.p`
+  font-size: 1.1em;
+  color: #555;
+  margin-bottom: 20px;
+  text-align: center;
+
+  @media (max-width: 768px) {
+    font-size: 0.9em;
+  }
+`;
+
+const Button = styled.button`
+  background-color: #007bff;
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-top: 20px;
+
+  &:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+  }
+
+  &.secondary {
+    background-color: #6c757d;
+    &:hover {
+      background-color: #5a6268;
+    }
+  }
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const FilterSidebar = styled.div`
+  width: 280px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  align-self: flex-start;
+  position: sticky;
+  top: 100px;
+  flex-shrink: 0;
+
+  h3 {
+    color: #007bff;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    position: static;
+    top: auto;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+`;
+
+const FilterGroup = styled.div`
+  margin-bottom: 20px;
+  text-align: left;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+  }
+
+  select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+`;
+
+const VehicleGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 30px;
+  width: 100%;
+`;
+
+const VehicleCard = styled.div`
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 30px;
+  width: 100%;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    gap: 15px;
+  }
+`;
+
+const VehicleImage = styled.img`
+  width: 250px;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 90%;
+    height: 180px;
+  }
+`;
+
+const VehicleDetails = styled.div`
+  flex-grow: 1;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+
+  @media (max-width: 992px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    padding-left: 0;
+    margin-top: 15px;
+  }
+`;
+
+const VehicleInfoGroupLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+`;
+
+const VehicleInfoTop = styled.div`
+  // No necesita estilos específicos aquí
+`;
+
+const VehicleName = styled.h3`
+  font-size: 1.8em;
+  margin-bottom: 5px;
+  color: #333;
+
+  @media (max-width: 768px) {
+    font-size: 1.5em;
+  }
+`;
+
+const VehicleDescription = styled.p`
+  font-size: 0.9em;
+  color: #777;
+  background-color: #f0f0f0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: inline-block;
+  margin-top: 5px;
+  font-weight: bold;
+`;
+
+const VehicleSpecsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 10px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+  }
+`;
+
+const VehicleSpecItem = styled.p`
+  font-size: 0.95em;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+
+  span {
+    font-weight: bold;
+    color: #333;
+  }
+
+  .icon {
+    color: #007bff;
+    font-size: 1.1em;
+  }
+`;
+
+const VehicleStatusInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 0.95em;
+`;
+
+const StatusText = styled.p`
+  font-weight: bold;
+  color: ${(props) => props.color || "#333"};
+`;
+
+const VehicleActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+
+  @media (max-width: 992px) {
+    width: 100%;
+    align-items: flex-start;
+    padding-top: 15px;
+  }
+  @media (max-width: 768px) {
+    align-items: center;
+  }
+`;
+
+const ActionButton = styled.button`
+  background-color: ${(props) => props.statusColor || "#007bff"};
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: bold;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.1);
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+// **** NUEVOS STYLED COMPONENTS PARA EL MODAL ****
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+
+  h2 {
+    color: #007bff;
+    font-size: 1.8em;
+    margin-bottom: 10px;
+  }
+
+  p {
+    color: #555;
+    font-size: 1.1em;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    min-height: 100px;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+
+  button {
+    margin-top: 10px;
+  }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+`;
+// **** FIN: NUEVOS STYLED COMPONENTS PARA EL MODAL ****
+
+// **** NUEVO STYLED COMPONENT PARA REPORTE ****
+const ReportButton = styled(Button)`
+  background-color: #17a2b8; /* Color info */
+  &:hover {
+    background-color: #138496;
+  }
+  margin-left: 10px; /* Espacio entre este y el botón de volver */
+`;
+
+const ReportTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
+  th,
+  td {
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    text-align: left;
+  }
+
+  th {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+  }
+
+  tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+
+  tr:hover {
+    background-color: #e9ecef;
+  }
+
+  td {
+    color: #333;
+    font-size: 0.9em;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.8em;
+    th,
+    td {
+      padding: 8px 10px;
+    }
+    /* Esto forzaría a las tablas a ser desplazables en pantallas pequeñas */
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+`;
+// **** FIN: NUEVO STYLED COMPONENT PARA REPORTE ****
+
+// **** INICIO: Componente VehicleManagementPage ****
 function VehicleManagementPage() {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
@@ -377,7 +817,6 @@ function VehicleManagementPage() {
                             vehicle.transmission.slice(1)}
                         </span>
                       </VehicleSpecItem>
-                      {/* CORRECCIÓN AQUÍ: Usa 'vehicle.branch' ya que es el nombre del campo en tu esquema */}
                       {vehicle.branch && (
                         <VehicleSpecItem>
                           <span className="icon">📍</span>Sucursal:{" "}
@@ -392,7 +831,6 @@ function VehicleManagementPage() {
                       >
                         Mantenimiento: {vehicle.needsMaintenance ? "Sí" : "No"}
                       </StatusText>
-                      {/* Muestra el motivo y la fecha de inicio del mantenimiento si está en mantenimiento */}
                       {vehicle.needsMaintenance && (
                         <>
                           <StatusText color="#777">
