@@ -9,6 +9,7 @@ const adminRoutes = require("./routes/adminRoutes"); // <-- NUEVO: Importa las r
 const branchRoutes = require("./routes/branchRoutes"); // Añade esta línea
 const reservationRoutes = require("./routes/reservationRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const adicionalRoutes = require("./routes/adicionalRoutes");
 const { startReminderJob } = require("./utils/cronJobs");
 const app = express();
 
@@ -42,6 +43,8 @@ app.use("/api/branches", branchRoutes);
 app.use("/api/admin", adminRoutes); // <-- NUEVO: Para la gestión de admin
 app.use("/api/reservations", reservationRoutes); // <-- ESTO ES CLAVE
 app.use("/api/payments", paymentRoutes);
+app.use('/api/adicionales', adicionalRoutes);
+
 
 // Ruta de prueba
 app.get("/", (req, res) => {

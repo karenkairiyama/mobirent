@@ -168,6 +168,9 @@ return (
                                     <ActionButton to="/admin-employees" className="secondary">
                                         Gestionar Empleados
                                     </ActionButton>
+                                    <ActionButton to="/adicional-maganagement" className="secondary">
+                                        Gestionar Adicionales
+                                    </ActionButton>
                                 </>
                             )}
                         </>
