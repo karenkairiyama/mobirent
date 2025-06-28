@@ -548,10 +548,88 @@ const cancelReservation = asyncHandler(async (req, res) => {
   });
 });
 
+//-------- tomi 28/06
+const getReservationByNumber = asyncHandler(async (req, res) => {
+  const reservationNumber = req.params.reservationNumber;
+  const reservation = await Reservation.findOne({ reservationNumber })
+    .populate("user", "username email")
+    .populate("vehicle", "brand model licensePlate pricePerDay photoUrl needsMaintenance isAvailable isReserved") // Añade campos relevantes del vehículo
+    .populate("pickupBranch", "name address")
+    .populate("returnBranch", "name address");
+
+  if (!reservation) {
+    res.status(404);
+    throw new Error("Reserva no encontrada con ese número.");
+  }
+
+  // Opcional: Si solo un admin/empleado debería ver cualquier reserva,
+  // y un usuario normal solo sus propias reservas:
+  // if (req.user.role === 'user' && reservation.user._id.toString() !== req.user._id.toString()) {
+  //   res.status(403);
+  //   throw new Error("No autorizado para ver esta reserva.");
+  // }
+
+  res.status(200).json(reservation);
+});
+
+
+const updateReservationStatus = asyncHandler(async (req, res) => {
+  const reservationId = req.params.id;
+  const { status } = req.body; // El nuevo estado
+  const userId = req.user._id;
+
+  // Buscar la reserva
+  const reservation = await Reservation.findById(reservationId).populate('vehicle');
+
+  if (!reservation) {
+    res.status(404);
+    throw new Error("Reserva no encontrada.");
+  }
+
+  // Opcional: Validar que solo el admin o empleado de la sucursal puedan cambiar estados
+  // if (req.user.role === 'employee' && reservation.pickupBranch._id.toString() !== req.user.branch._id.toString()) {
+  //   res.status(403);
+  //   throw new Error("No autorizado para gestionar esta reserva.");
+  // }
+
+  // Validaciones para transiciones de estado (ej. no puedes pasar de cancelled a confirmed)
+  const allowedTransitions = {
+    'confirmed': ['picked_up', 'cancelled'],
+    'picked_up': ['returned'],
+    'returned': ['completed'],
+    // 'pending': ['confirmed', 'cancelled'], // Estas son manejadas por payReservation/vencimiento
+  };
+
+  if (!allowedTransitions[reservation.status] || !allowedTransitions[reservation.status].includes(status)) {
+    res.status(400);
+    throw new Error(`Transición de estado inválida de '${reservation.status}' a '${status}'.`);
+  }
+
+  // Actualizar el estado de la reserva
+  reservation.status = status;
+
+  // Lógica específica para el estado "returned" (lo que implica "completed")
+  if (status === 'returned') {
+    reservation.completedAt = new Date(); // Puedes añadir este campo al modelo si quieres
+    reservation.status = 'completed'; // Marcar como completada después de la devolución
+  }
+
+
+  await reservation.save();
+
+  res.status(200).json({
+    message: `Estado de la reserva actualizado a '${reservation.status}'.`,
+    reservation,
+  });
+});
+
+
 module.exports = {
   createReservation,
   getMyReservations,
   getReservationById,
   payReservation,
   cancelReservation,
+  updateReservationStatus,
+  getReservationByNumber,
 };

@@ -215,7 +215,7 @@ const getAvailableVehicles = async (req, res) => {
           { endDate: { $gte: parsedPickupDate } }, // Y termina después o en la fecha de recogida solicitada
         ],
         // CORRECCIÓN AQUÍ: Incluye todos los estados que significan que el vehículo NO está disponible
-        status: { $in: ["confirmed"] },
+        status: { $in: ["confirmed","picked_up"] },
       }).select("vehicle"); // Solo necesitamos el campo 'vehicle' (su ID)
 
       // Extrae los IDs de los vehículos de las reservas superpuestas
