@@ -4,6 +4,7 @@ const Vehicle = require("../models/Vehicle");
 const Branch = require("../models/Branch"); // Importa el modelo Branch
 const asyncHandler = require("../middleware/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
+
 // @desc    Crear un nuevo vehículo (solo para admin)
 // @route   POST /api/vehicles
 // @access  Admin
@@ -117,7 +118,7 @@ const createVehicle = async (req, res) => {
         message: "Vehículo creado exitosamente y asignado a la sucursal.",
         vehicle: {
           _id: vehicle._id,
-          vehicleId: vehicle.vehicleId,
+          vehicleId: vehicle.vehicleId, // vehicleId viene del plugin AutoIncrement
           brand: vehicle.brand,
           model: vehicle.model,
           pricePerDay: vehicle.pricePerDay,
@@ -210,19 +211,18 @@ const getAvailableVehicles = async (req, res) => {
       // Una reserva [start, end] se superpone con [reqPickup, reqReturn] si:
       // (start <= reqReturn AND end >= reqPickup)
       const overlappingReservations = await Reservation.find({
+        vehicle: filter._id, // Asegura que el filtro sea por el vehículo actual
         $and: [
           { startDate: { $lte: parsedReturnDate } }, // La reserva empieza antes o en la fecha de devolución solicitada
           { endDate: { $gte: parsedPickupDate } }, // Y termina después o en la fecha de recogida solicitada
         ],
-        // CORRECCIÓN AQUÍ: Incluye todos los estados que significan que el vehículo NO está disponible
-        status: { $in: ["confirmed","picked_up"] },
+        status: { $in: ["confirmed"] },
       }).select("vehicle"); // Solo necesitamos el campo 'vehicle' (su ID)
 
       // Extrae los IDs de los vehículos de las reservas superpuestas
       reservedVehicleIds = overlappingReservations.map((res) => res.vehicle);
 
       // 2. Añadir la condición de exclusión al filtro principal
-      // Esto asegura que los vehículos devueltos NO sean aquellos que están reservados.
       if (reservedVehicleIds.length > 0) {
         filter._id = { $nin: reservedVehicleIds }; // $nin significa "not in"
       }
@@ -260,7 +260,6 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
       if (needsMaintenance === true && vehicle.needsMaintenance === false) {
         // CAMBIO 7: Validar y asignar motivo y fecha de inicio al entrar en mantenimiento
         if (!maintenanceReason || maintenanceReason.trim() === "") {
-          // Validación más robusta
           res.status(400);
           throw new Error(
             "El motivo de mantenimiento es obligatorio cuando se marca el vehículo en mantenimiento."
@@ -306,6 +305,24 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
     // Esto es para que los administradores puedan cambiar isAvailable independientemente de needsMaintenance,
     // pero siempre respetando que si está en mantenimiento, isAvailable es false.
     if (isAvailable !== undefined && userRole === "admin") {
+      // **NUEVA VALIDACIÓN: NO permitir marcar como NO DISPONIBLE si hay reservas futuras**
+      if (isAvailable === false && vehicle.isAvailable === true) {
+        // Si el intento es cambiar de DISPONIBLE a NO DISPONIBLE
+        const now = new Date();
+        const futureReservations = await Reservation.findOne({
+          vehicle: vehicle._id,
+          status: { $in: ["confirmed", "picked_up"] }, // Considerar reservas confirmadas y en curso
+          startDate: { $gte: now }, // Cuya fecha de inicio sea hoy o en el futuro
+        });
+
+        if (futureReservations) {
+          res.status(400);
+          throw new Error(
+            "No se puede marcar el vehículo como no disponible porque tiene reservas futuras activas."
+          );
+        }
+      }
+
       if (vehicle.needsMaintenance && isAvailable === true) {
         // Si está en mantenimiento, no puede estar disponible.
         // Ignoramos el intento de marcarlo como disponible en este caso.
@@ -340,7 +357,15 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
     if (error.kind === "ObjectId") {
       return res.status(400).json({ message: "ID de vehículo inválido." });
     }
-    res.status(500).json({ message: `Error del servidor: ${error.message}` });
+    // Si el error es una de las "throw new Error" personalizadas, ya tiene status 400.
+    // Si no, es un error 500.
+    if (res.statusCode === 200) {
+      // Si el status code no fue cambiado por un throw personalizado
+      res.status(500);
+    }
+    res.json({
+      message: error.message || "Error del servidor al actualizar el vehículo.",
+    });
   }
 });
 
