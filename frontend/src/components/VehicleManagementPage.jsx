@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { useAuth } from "../context/AuthContext";
+//import { useAuth } from "../context/AuthContext";
 import axiosInstance from "../api/axiosInstance"; // Asegúrate de que esta ruta sea correcta
 
 // **** INICIO: Styled Components ****

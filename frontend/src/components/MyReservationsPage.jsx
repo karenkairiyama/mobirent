@@ -311,9 +311,11 @@ function MyReservationsPage() {
           </thead>
           <tbody>
             {reservations.map((r) => (
-              <Tr key={r._id}>
-                {" "}
-                {/* Quitamos el onClick del Tr si el botón maneja la acción */}
+              <Tr
+                key={r._id}
+                onClick={() => navigate(`/reservations/${r._id}`)} // <--- AÑADE ESTO
+                style={{ cursor: 'pointer' }} // <--- OPCIONAL: Para indicar que la fila es clickeable
+              >
                 <Td>{r.reservationNumber}</Td>
                 <Td>
                   {r.vehicle?.brand} {r.vehicle?.model} (
@@ -330,7 +332,10 @@ function MyReservationsPage() {
                 <Td>
                   {r.status === "confirmed" && (
                     <ActionButton
-                      onClick={(e) => handleCancelClick(e, r)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // <--- ASEGURA QUE ESTO ESTÉ AQUÍ
+                        handleCancelClick(e, r);
+                      }}
                       disabled={cancelLoading}
                     >
                       Cancelar Reserva
@@ -372,7 +377,7 @@ function MyReservationsPage() {
                     {new Date(selectedReservation.startDate).toLocaleDateString(
                       "es-AR"
                     )}{" "}
-                    –{" "}
+                    {" "}
                     {new Date(selectedReservation.endDate).toLocaleDateString(
                       "es-AR"
                     )}

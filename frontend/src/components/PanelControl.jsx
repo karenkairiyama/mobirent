@@ -143,11 +143,16 @@ return (
                             )}
 
                             {/* ESTA HU ES DE LA SRPINT DOS ASIQUE LA OCULTOOOO */}
-                            {/*userRole === "employee" && (
+                            {userRole === "employee" && (
+                                <>
                                 <ActionButton to="/create-user-as-employee" className="secondary">
                                     Cargar Nuevo Cliente
                                 </ActionButton>
-                            )*/}
+                                <ActionButton to="/reservation-status-page" className="secondary">
+                                    Gestionar Reservas
+                                </ActionButton>
+                                </>
+                            )}
 
                             {userRole === "admin" && (
                                 <>
@@ -162,6 +167,9 @@ return (
                                     </ActionButton>
                                     <ActionButton to="/admin-employees" className="secondary">
                                         Gestionar Empleados
+                                    </ActionButton>
+                                    <ActionButton to="/adicional-maganagement" className="secondary">
+                                        Gestionar Adicionales
                                     </ActionButton>
                                 </>
                             )}

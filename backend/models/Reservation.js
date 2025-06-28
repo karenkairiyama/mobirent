@@ -60,6 +60,27 @@ const reservationSchema = mongoose.Schema(
       default: false,
     },
 
+    // CAMPOS PARA ADICIONALES (NUEVOS)
+    adicionales: [ // Un array de objetos que describen los adicionales
+      {
+        adicional: { // ID del adicional (referencia al modelo Adicional)
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Adicional',
+          // No es 'required' aquí, ya que el array puede estar vacío si no se eligen adicionales
+        },
+        quantity: { // Cantidad de este adicional (ej. 2 sillas de bebé)
+          type: Number,
+          default: 1, // Por defecto 1, pero se puede especificar
+          min: 1,
+        },
+        itemPrice: { // Precio del adicional en el momento de la adición (para historial si el precio cambia después)
+          type: Number,
+          min: 0,
+          // Será requerido en la lógica del controlador cuando se añada un adicional
+        },
+      },
+    ],
+
     // CAMPOS PARA CANCELACIÓN
     canceledAt: {
       type: Date,

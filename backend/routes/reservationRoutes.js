@@ -7,7 +7,9 @@ const {
   createReservation,
   getMyReservations,
   getReservationById,
-  cancelReservation, // <-- Asegúrate de que esta esté importada
+  cancelReservation,
+  getReservationByNumber,
+  updateReservationStatus, // <-- Asegúrate de que esta esté importada
 } = require("../controllers/reservationController");
 
 const {
@@ -32,5 +34,9 @@ router.route("/:id/pay").post(protect, processReservationPayment);
 // Método: PUT
 // URL: /api/reservations/:id/cancel
 router.route("/:id/cancel").put(protect, cancelReservation); // <-- AÑADE ESTA LÍNEA
+
+router.route("/byNumber/:reservationNumber").get(protect, getReservationByNumber);
+
+router.route("/:id/status").put(protect, updateReservationStatus);
 
 module.exports = router;

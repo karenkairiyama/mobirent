@@ -30,6 +30,9 @@ import MyReservationsPage from './components/MyReservationsPage.jsx';
 import ReservationDetailPage from './components/ReservationDetailPage.jsx';
 import EmployeeManagementPage from './components/EmployeeManagementPage.jsx';
 import PanelControl from './components/PanelControl.jsx';
+import ReservationStatusPage from "./components/ReservationStatusPage.jsx";
+import AdicionalManagementPage from "./components/AdicionalManagementPage.jsx";
+
 // Componente de Ruta Protegida 29/5 micha
 // **ESTA ES LA ÚNICA Y CORRECTA DECLARACIÓN DE ProtectedRoute**
 // Se mueve aquí para que pueda usar useAuth directamente,
@@ -207,6 +210,22 @@ function App() {
             element={
               <AppProtectedRoute allowedRoles={["employee","admin"]}>
                 <PanelControl />
+              </AppProtectedRoute>
+            }
+          />
+          <Route
+            path="/reservation-status-page" // Puedes ajustar esta ruta si lo deseas
+            element={
+              <AppProtectedRoute allowedRoles={["employee"]}>
+                <ReservationStatusPage />
+              </AppProtectedRoute>
+            }
+          />
+          <Route
+            path="/adicional-maganagement" // Puedes ajustar esta ruta si lo deseas
+            element={
+              <AppProtectedRoute allowedRoles={["admin"]}>
+                <AdicionalManagementPage />
               </AppProtectedRoute>
             }
           />

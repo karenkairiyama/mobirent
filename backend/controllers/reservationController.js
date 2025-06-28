@@ -4,6 +4,7 @@ const asyncHandler = require("express-async-handler");
 const Reservation = require("../models/Reservation");
 const Vehicle = require("../models/Vehicle");
 const Branch = require("../models/Branch");
+const Adicional = require("../models/Adicional");
 const User = require("../models/User"); // Asegúrate de que User está importado para el email
 const sendEmail = require("../utils/sendEmail");
 const fakePaymentService = require("../services/fakePaymentService");
@@ -177,9 +178,10 @@ const getMyReservations = asyncHandler(async (req, res) => {
 const getReservationById = asyncHandler(async (req, res) => {
   const reservation = await Reservation.findById(req.params.id)
     .populate("user", "username email")
-    .populate("vehicle", "brand model licensePlate pricePerDay")
+    .populate("vehicle", "brand model licensePlate pricePerDay photoUrl needsMaintenance isAvailable isReserved")
     .populate("pickupBranch", "name address")
-    .populate("returnBranch", "name address");
+    .populate("returnBranch", "name address")
+    .populate("adicionales.adicional", "name price description"); // <-- AÑADE ESTA LÍNEA PARA POPULAR ADICIONALES
 
   if (!reservation) {
     res.status(404);
@@ -548,10 +550,144 @@ const cancelReservation = asyncHandler(async (req, res) => {
   });
 });
 
+//-------- tomi 28/06
+const getReservationByNumber = asyncHandler(async (req, res) => {
+  const reservationNumber = req.params.reservationNumber;
+  const reservation = await Reservation.findOne({ reservationNumber })
+    .populate("user", "username email")
+    .populate("vehicle", "brand model licensePlate pricePerDay photoUrl needsMaintenance isAvailable isReserved")
+    .populate("pickupBranch", "name address")
+    .populate("returnBranch", "name address")
+    .populate("adicionales.adicional", "name price description"); // <-- AÑADE ESTA LÍNEA
+
+  if (!reservation) {
+    res.status(404);
+    throw new Error("Reserva no encontrada con ese número.");
+  }
+  res.status(200).json(reservation);
+});
+
+
+/**
+ * @desc    Actualizar el estado de una reserva (y añadir adicionales si se pasa a 'picked_up')
+ * @route   PUT /api/reservations/:id/status
+ * @access  Private (Admin, Employee)
+ */
+const updateReservationStatus = asyncHandler(async (req, res) => {
+  const reservationId = req.params.id;
+  const { status, adicionales: newAdicionalesData } = req.body; // <-- Recibe el array de adicionales
+  const userId = req.user._id; // Para validación de usuario si es necesario
+
+  const reservation = await Reservation.findById(reservationId).populate('vehicle'); // Popula el vehículo para acceder a su precio
+
+  if (!reservation) {
+    res.status(404);
+    throw new Error("Reserva no encontrada.");
+  }
+
+  // Opcional: Validaciones de rol (ej. solo admin/empleado puede cambiar estados clave)
+  // Asegúrate de que tu ruta (`reservationRoutes.js`) tenga el middleware `protect` y `authorize(['admin', 'employee'])`
+  // if (req.user.role !== 'admin' && req.user.role !== 'employee') {
+  //   res.status(403);
+  //   throw new Error("No autorizado para gestionar el estado de las reservas.");
+  // }
+
+
+  // Lógica para añadir adicionales y recalcular costo SOLO cuando el estado es 'picked_up'
+  if (status === 'picked_up') {
+    // Solo permitir añadir adicionales si la reserva está en 'confirmed' o 'pending'
+    if (reservation.status !== 'confirmed' && reservation.status !== 'pending') {
+      res.status(400);
+      throw new Error(`No se pueden añadir adicionales al recoger el vehículo si la reserva no está en estado 'confirmed' o 'pending'. Estado actual: ${reservation.status}`);
+    }
+
+    // Procesa los nuevos adicionales recibidos
+    if (newAdicionalesData && newAdicionalesData.length > 0) {
+      const validatedAdicionalesToAdd = [];
+      let costOfNewAdicionales = 0;
+
+      for (const item of newAdicionalesData) {
+        if (!item.adicionalId || item.quantity === undefined || item.quantity <= 0) {
+          res.status(400);
+          throw new Error('Datos de adicional inválidos: ID o cantidad faltante/inválida.');
+        }
+        const existingAdicional = await Adicional.findById(item.adicionalId);
+        if (!existingAdicional) { // Considera si quieres que esté activo también
+          res.status(404);
+          throw new Error(`Adicional con ID ${item.adicionalId} no encontrado.`);
+        }
+
+        validatedAdicionalesToAdd.push({
+          adicional: existingAdicional._id,
+          quantity: item.quantity,
+          itemPrice: existingAdicional.price, // Captura el precio actual del adicional
+        });
+        costOfNewAdicionales += existingAdicional.price * item.quantity;
+      }
+
+      // Añadir los nuevos adicionales validados al array existente de la reserva
+      // Usa `$push` si quieres añadir sin reemplazar, o concat si quieres reemplazar/fusionar.
+      // Aquí los añadimos, permitiendo que se acumulen si por alguna razón se llama varias veces.
+      reservation.adicionales.push(...validatedAdicionalesToAdd);
+
+      // Recalcular el costo total de la reserva
+      // Opción 1: Sumar el costo de los nuevos adicionales al costo actual
+      reservation.totalCost += costOfNewAdicionales;
+
+      // Opción 2 (Más robusta): Recalcular el total desde cero
+      // Esto es útil si el `totalCost` original podría tener descuentos o complejidades.
+      // Calcula días de duración
+      const diffTime = Math.abs(reservation.endDate.getTime() - reservation.startDate.getTime());
+      const durationInDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      let recalculatedTotal = durationInDays * reservation.vehicle.pricePerDay; // Costo base del vehículo
+
+      // Suma todos los adicionales de la reserva (los que ya estaban y los nuevos)
+      reservation.adicionales.forEach(item => {
+        recalculatedTotal += item.itemPrice * item.quantity;
+      });
+      reservation.totalCost = recalculatedTotal;
+    }
+  }
+
+  // Validaciones de transición de estado (esto ya lo tienes)
+  const allowedTransitions = {
+    'pending': ['confirmed', 'cancelled'], // Asume que 'pending' a 'picked_up' no es directo
+    'confirmed': ['picked_up', 'cancelled'],
+    'picked_up': ['returned'],
+    'returned': ['completed'],
+  };
+
+  if (!allowedTransitions[reservation.status] || !allowedTransitions[reservation.status].includes(status)) {
+    res.status(400);
+    throw new Error(`Transición de estado inválida de '${reservation.status}' a '${status}'.`);
+  }
+
+  // Actualiza el estado de la reserva
+  reservation.status = status;
+
+  // Lógica específica para el vehículo según el nuevo estado (ajustado de conversaciones previas)
+  const vehicle = await Vehicle.findById(reservation.vehicle._id);
+  if (!vehicle) {
+    res.status(404);
+    throw new Error("Vehículo asociado a la reserva no encontrado.");
+  }
+
+  // Guarda la reserva con el nuevo estado y los adicionales/costo actualizados
+  await reservation.save();
+
+  res.status(200).json({
+    message: `Estado de la reserva actualizado a '${reservation.status}'.`,
+    reservation, // Retorna la reserva actualizada
+  });
+});
+
+
 module.exports = {
   createReservation,
   getMyReservations,
   getReservationById,
   payReservation,
   cancelReservation,
+  updateReservationStatus,
+  getReservationByNumber,
 };
