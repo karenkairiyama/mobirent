@@ -2,11 +2,10 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext"; // Asegúrate de que AuthContext esté en esta ruta
 import axiosInstance from "../api/axiosInstance"; // Asegúrate de que esta ruta sea correcta
 
 // **** INICIO: Styled Components ****
-// ¡Es CRUCIAL que estos Styled Components estén definidos FUERA de la función VehicleManagementPage!
 const PageContainer = styled.div`
   background-color: #f0f2f5;
   min-height: 100vh;
@@ -324,7 +323,7 @@ const ActionButton = styled.button`
   }
 `;
 
-// **** NUEVOS STYLED COMPONENTS PARA EL MODAL ****
+// **** Styled Components para el MODAL de Mantenimiento ****
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -383,9 +382,9 @@ const ModalActions = styled.div`
   gap: 10px;
   margin-top: 15px;
 `;
-// **** FIN: NUEVOS STYLED COMPONENTS PARA EL MODAL ****
+// **** FIN: Styled Components para el MODAL de Mantenimiento ****
 
-// **** NUEVO STYLED COMPONENT PARA REPORTE ****
+// **** Styled Component para REPORTE ****
 const ReportButton = styled(Button)`
   background-color: #17a2b8; /* Color info */
   &:hover {
@@ -443,35 +442,52 @@ const ReportTable = styled.table`
     white-space: nowrap;
   }
 `;
-// **** FIN: NUEVO STYLED COMPONENT PARA REPORTE ****
+// **** FIN: Styled Component para REPORTE ****
+
+// **** NUEVO Styled Component para mensajes de alerta ****
+const AlertMessage = styled.div`
+  background-color: ${(props) =>
+    props.type === "error" ? "#f8d7da" : "#d4edda"};
+  color: ${(props) => (props.type === "error" ? "#721c24" : "#155724")};
+  border: 1px solid
+    ${(props) => (props.type === "error" ? "#f5c6cb" : "#c3e6cb")};
+  border-radius: 5px;
+  padding: 10px 15px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: bold;
+`;
+// **** FIN: NUEVO Styled Component ****
 
 // **** INICIO: Componente VehicleManagementPage ****
 function VehicleManagementPage() {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Obtén el objeto user del contexto de autenticación
   const [vehicles, setVehicles] = useState([]);
   const [branches, setBranches] = useState([]);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState("");
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Error general de carga de la página
+  const [actionError, setActionError] = useState(null); // <-- NUEVO: Error para acciones específicas (ej. update status)
 
-  // --- NUEVOS ESTADOS PARA EL MODAL DE MANTENIMIENTO ---
+  // --- ESTADOS PARA EL MODAL DE MANTENIMIENTO ---
   const [showMaintenanceReasonModal, setShowMaintenanceReasonModal] =
     useState(false);
   const [vehicleToMaintainId, setVehicleToMaintainId] = useState(null);
   const [maintenanceReasonInput, setMaintenanceReasonInput] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState(null);
-  // --- FIN: NUEVOS ESTADOS ---
+  // --- FIN: ESTADOS ---
 
-  // --- NUEVOS ESTADOS PARA EL REPORTE DE MANTENIMIENTO ---
+  // --- ESTADOS PARA EL REPORTE DE MANTENIMIENTO ---
   const [maintenanceReport, setMaintenanceReport] = useState([]);
   const [showReport, setShowReport] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
-  // --- FIN: NUEVOS ESTADOS ---
+  // --- FIN: ESTADOS ---
 
-  // useCallback para la función de carga de datos para evitar re-creaciones
   const fetchVehiclesAndBranches = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -492,14 +508,13 @@ function VehicleManagementPage() {
     }
   }, []);
 
-  // useCallback para la función de carga del reporte
   const fetchMaintenanceReport = useCallback(async () => {
     setReportLoading(true);
     setReportError(null);
     try {
       const response = await axiosInstance.get("/vehicles/reports/maintenance");
-      setMaintenanceReport(response.data.report || []); // report puede ser un array vacío
-      setShowReport(true); // Muestra el reporte una vez cargado
+      setMaintenanceReport(response.data.report || []);
+      setShowReport(true);
     } catch (err) {
       console.error("Error al cargar reporte de mantenimiento:", err);
       setReportError(
@@ -512,7 +527,10 @@ function VehicleManagementPage() {
   }, []);
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole");
+    // Asegúrate de obtener el rol del usuario del contexto si usas useAuth
+    // O si lo sigues guardando en localStorage, asegúrate de que sea consistente.
+    // Si user (del useAuth) tiene el rol, es preferible usarlo.
+    const role = user?.role || localStorage.getItem("userRole"); // Prioriza user.role del contexto
     setUserRole(role);
 
     const token = localStorage.getItem("token");
@@ -522,10 +540,11 @@ function VehicleManagementPage() {
     }
 
     fetchVehiclesAndBranches();
-  }, [navigate, fetchVehiclesAndBranches]);
+  }, [navigate, fetchVehiclesAndBranches, user]); // Añadir 'user' a las dependencias
 
-  // --- MODIFICACIÓN DE handleStatusToggle para gestionar el modal ---
+  // --- MODIFICACIÓN DE handleStatusToggle para gestionar errores y el modal ---
   const handleStatusToggle = async (vehicleId, currentStatus, type) => {
+    setActionError(null); // Limpiar cualquier error de acción anterior
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
@@ -536,34 +555,31 @@ function VehicleManagementPage() {
       if (!currentStatus) {
         // Si el vehículo NO está en mantenimiento (queremos ponerlo)
         setVehicleToMaintainId(vehicleId);
-        setMaintenanceReasonInput(""); // Limpiar el input para un nuevo motivo
+        setMaintenanceReasonInput("");
         setModalError(null);
-        setShowMaintenanceReasonModal(true); // Abrir el modal
-        return; // Salir de la función, la lógica de API se manejará en handleMaintenanceReasonSubmit
+        setShowMaintenanceReasonModal(true);
+        return;
       } else {
         // Si el vehículo SÍ está en mantenimiento (queremos sacarlo)
-        // Aquí la lógica va directamente a la API para sacarlo de mantenimiento
         const updateBody = {
           needsMaintenance: false,
-          isAvailable: true, // Asumimos que vuelve a estar disponible
-          maintenanceReason: null, // Limpiar el motivo
-          maintenanceStartDate: null, // Limpiar la fecha de inicio
+          isAvailable: true,
+          maintenanceReason: null,
+          maintenanceStartDate: null,
         };
         try {
           await axiosInstance.put(`/vehicles/${vehicleId}/status`, updateBody);
           fetchVehiclesAndBranches(); // Recargar datos para reflejar el cambio
         } catch (error) {
           console.error("Error al sacar de mantenimiento:", error);
-          alert(
-            `Error al sacar el vehículo de mantenimiento: ${
-              error.response?.data?.message || "Error desconocido"
-            }`
+          // CAMBIO: Usar setActionError en lugar de alert()
+          setActionError(
+            error.response?.data?.message ||
+              "Error desconocido al sacar el vehículo de mantenimiento."
           );
         }
       }
-    }
-    // Lógica existente para otros tipos de toggle (available, reserved)
-    else if (type === "available" && userRole === "admin") {
+    } else if (type === "available" && userRole === "admin") {
       const updateBody = { isAvailable: !currentStatus };
       if (!currentStatus) {
         // Si se marca como disponible, no puede estar en mantenimiento
@@ -574,10 +590,10 @@ function VehicleManagementPage() {
         fetchVehiclesAndBranches(); // Recargar datos
       } catch (error) {
         console.error("Error al cambiar disponibilidad:", error);
-        alert(
-          `Error al actualizar disponibilidad: ${
-            error.response?.data?.message || "Error desconocido"
-          }`
+        // CAMBIO: Usar setActionError en lugar de alert()
+        setActionError(
+          error.response?.data?.message ||
+            "Error desconocido al actualizar disponibilidad."
         );
       }
     } else if (type === "reserved" && userRole === "admin") {
@@ -591,10 +607,10 @@ function VehicleManagementPage() {
         fetchVehiclesAndBranches(); // Recargar datos
       } catch (error) {
         console.error("Error al cambiar estado de reserva:", error);
-        alert(
-          `Error al actualizar reserva: ${
-            error.response?.data?.message || "Error desconocido"
-          }`
+        // CAMBIO: Usar setActionError en lugar de alert()
+        setActionError(
+          error.response?.data?.message ||
+            "Error desconocido al actualizar reserva."
         );
       }
     }
@@ -728,13 +744,16 @@ function VehicleManagementPage() {
           Visualiza y gestiona el estado de los vehículos.
         </PageSubText>
 
+        {/* Área para mostrar errores de acciones específicas */}
+        {actionError && <AlertMessage type="error">{actionError}</AlertMessage>}
+
         {showReport && (
           <div style={{ marginBottom: "40px" }}>
             <PageTitle style={{ fontSize: "2em" }}>
               Reporte de Mantenimiento
             </PageTitle>
             {reportError && (
-              <p style={{ color: "red", textAlign: "center" }}>{reportError}</p>
+              <AlertMessage type="error">{reportError}</AlertMessage>
             )}
             {maintenanceReport.length === 0 ? (
               <PageSubText>
