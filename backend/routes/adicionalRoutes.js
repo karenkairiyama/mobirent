@@ -6,9 +6,11 @@ const {
   getAdicionalById,
   updateAdicional,
   deleteAdicional,
+  getAdicionalesAvailable,
 } = require('../controllers/adicionalController');
 const { protect, authorize } = require('../middleware/authMiddleware'); // Middleware de autenticación y autorización
 
+router.route('/available').get(protect, getAdicionalesAvailable);
 // Rutas para crear y obtener todos los adicionales
 // POST /api/adicionales (solo admin puede crear)
 // GET /api/adicionales (solo admin puede ver todos para gestión, o cualquiera si es para selección en reserva)

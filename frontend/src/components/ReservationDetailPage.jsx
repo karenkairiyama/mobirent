@@ -53,22 +53,22 @@ const BackButton = styled.button`
 const Button = styled.button.withConfig({
   shouldForwardProp: (prop) => prop !== '$cancelled' && prop !== 'disabled'
 })`
-  background-color: ${props => (props.cancelled ? '#6c757d' : '#dc3545')};  /* Si ya está cancelada */
+  background-color: ${props => (props.cancelled ? '#6c757d' : '#dc3545')};   /* Si ya está cancelada */
   color: white;
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
-  cursor: ${props => (props.disabled ? 'not-allowed' : 'pointer')};  /* Sin pointer si está deshabilitado */
+  cursor: ${props => (props.disabled ? 'not-allowed' : 'pointer')};   /* Sin pointer si está deshabilitado */
   margin-right: 10px;
-  opacity: ${props => (props.disabled ? 0.6 : 1)};  /* Menor opacidad si está desactivado */
+  opacity: ${props => (props.disabled ? 0.6 : 1)};    /* Menor opacidad si está desactivado */
   &:hover {
     background-color: ${props =>
-      props.disabled 
-        ? '' 
-        : props.cancelled 
-          ? '#5a6268' 
+      props.disabled
+        ? ''
+        : props.cancelled
+          ? '#5a6268'
           : '#c82333'
-    };  /* Hover condicional */
+    };   /* Hover condicional */
   }
 `;
 
@@ -78,7 +78,7 @@ const Message = styled.p.withConfig({
 })`
   margin-top: 20px;
   font-weight: bold;
-  color: ${props => (props.error ? '#dc3545' : '#28a745')};  /* Rojo=error, verde=éxito */
+  color: ${props => (props.error ? '#dc3545' : '#28a745')};   /* Rojo=error, verde=éxito */
   text-align: center;
 `;
 
@@ -103,7 +103,7 @@ function ReservationDetailPage() {
   const [reservation, setReservation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [actionMsg, setActionMsg] = useState('');  // Mensaje tras cancelar
+  const [actionMsg, setActionMsg] = useState('');    // Mensaje tras cancelar
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -138,7 +138,7 @@ function ReservationDetailPage() {
     return (
       <Container>
         <Title>Detalle de Reserva</Title>
-        <ErrorMessage>{error}</ErrorMessage>
+        <Message error={true}>{error}</Message>
         <BackButton onClick={() => navigate(-1)}>Volver</BackButton>
       </Container>
     );
@@ -148,7 +148,7 @@ function ReservationDetailPage() {
     return (
       <Container>
         <Title>Detalle de Reserva</Title>
-        <ErrorMessage>Reserva no encontrada.</ErrorMessage>
+        <Message error={true}>Reserva no encontrada.</Message>
         <BackButton onClick={() => navigate(-1)}>Volver</BackButton>
       </Container>
     );
@@ -159,13 +159,19 @@ function ReservationDetailPage() {
   const end   = new Date(reservation.endDate).toLocaleDateString('es-AR');
 
 
-  const canCancel = reservation.status === 'confirmed';  // Solo cancelar si está confirmada
+  const canCancel = reservation.status === 'confirmed';    // Solo cancelar si está confirmada
+
+  // NUEVA VARIABLE PARA CONTROLAR LA VISIBILIDAD DEL BOTÓN DE CANCELAR
+  const showActionButton =
+    reservation.status !== 'picked_up' &&
+    reservation.status !== 'returned' &&
+    reservation.status !== 'completed';
 
   // Manejador de la cancelación
   const handleCancel = async () => {
     if (!window.confirm('¿Seguro que deseas cancelar esta reserva?')) return;
-    setActionMsg('');   // Limpia mensaje previo
-    setLoading(true);   // Deshabilitar botón. marca como cargando
+    setActionMsg('');    // Limpia mensaje previo
+    setLoading(true);    // Deshabilitar botón. marca como cargando
     try {
       const { refundAmount, refundType, message } = await cancelReservation(id);
       // Actualizar estado localmente para reflejar cambios
@@ -175,12 +181,12 @@ function ReservationDetailPage() {
         refundAmount,
         canceledAt: new Date().toISOString()
       }));
-      setActionMsg(`${message} (${refundType}, ARS ${refundAmount.toFixed(2)})`);  // Feedback
+      setActionMsg(`${message} (${refundType}, ARS ${refundAmount.toFixed(2)})`);    // Feedback
     } catch (err) {
         console.error('[ERROR cancelar]', err.response || err);
         // Mostrar mensaje del backend si lo hay
         const msg = err.response?.data?.message || 'Error al cancelar la reserva.';
-        setActionMsg(msg);  // Mensaje de error
+        setActionMsg(msg);    // Mensaje de error
     } finally {
       setLoading(false);
     }
@@ -217,6 +223,21 @@ function ReservationDetailPage() {
         <Label>Sucursal de Devolución:</Label>{' '}
         <Value>{reservation.returnBranch.name} ({reservation.returnBranch.address})</Value>
       </Section>
+      
+      {/* SECCIÓN PARA ADICIONALES */}
+      {reservation.adicionales && reservation.adicionales.length > 0 && (
+        <Section>
+          <Label>Adicionales:</Label>{' '}
+          <Value>
+            {reservation.adicionales.map((item, index) => (
+              <p key={index} style={{ margin: '5px 0' }}>
+                {item.quantity} x {item.adicional?.name} (ARS {item.itemPrice?.toFixed(2)} c/u)
+              </p>
+            ))}
+          </Value>
+        </Section>
+      )}
+      {/* FIN DE LA SECCIÓN DE ADICIONALES */}
 
       <Section>
         <Label>Costo Total:</Label>{' '}
@@ -232,9 +253,8 @@ function ReservationDetailPage() {
         </Section>
       )}
       
-      
       {/* Mostrar el mensaje de recordatorio solo si la reserva está confirmada */}
-      {console.log('DEBUG [ReservationDetailPage]: reservation.status para recordatorio:', reservation.status)} // 5. Log de la condición exacta
+      {console.log('DEBUG [ReservationDetailPage]: reservation.status para recordatorio:', reservation.status)}
       {reservation.status === 'confirmed' && (
         <ReminderMessage>
           Recibirás un recordatorio por email 2 días antes de la fecha de retiro de tu vehículo.
@@ -243,16 +263,18 @@ function ReservationDetailPage() {
 
 
       <div>
-        <Button
-          onClick={handleCancel}
-          disabled={!canCancel || loading}
-          cancelled={reservation.status==='cancelled'}
-        >
-          {reservation.status==='cancelled' ? 'Cancelada' : 'Cancelar Reserva'}
-        </Button>
+        {showActionButton && ( // <-- CONDICIONAL APLICADO AQUÍ
+          <Button
+            onClick={handleCancel}
+            disabled={!canCancel || loading}
+            cancelled={reservation.status==='cancelled'}
+          >
+            {reservation.status==='cancelled' ? 'Cancelada' : 'Cancelar Reserva'}
+          </Button>
+        )}
         <BackButton onClick={() => navigate('/my-reservations')}>
-        Volver a Mi Historial
-      </BackButton>
+          Volver a Mi Historial
+        </BackButton>
       </div>
 
       {actionMsg && (

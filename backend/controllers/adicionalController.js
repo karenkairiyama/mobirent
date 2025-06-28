@@ -53,6 +53,11 @@ const getAdicionales = asyncHandler(async (req, res) => {
   res.status(200).json(adicionales);
 });
 
+const getAdicionalesAvailable = asyncHandler(async (req, res) => {
+  const adicionales = await Adicional.find({ isActive: true }); // Solo adicionales disponibles
+  res.status(200).json(adicionales);
+});
+
 /**
  * @desc    Obtener un adicional por ID
  * @route   GET /api/adicionales/:id
@@ -121,4 +126,5 @@ module.exports = {
   getAdicionalById,
   updateAdicional,
   deleteAdicional,
+  getAdicionalesAvailable
 };

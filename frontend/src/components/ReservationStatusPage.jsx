@@ -552,13 +552,76 @@ const ActionButton = styled.button`
   }
 `;
 
+// *** NUEVOS STYLED COMPONENTS PARA LA SELECCIÓN DE ADICIONALES ***
+const AdicionalesSection = styled.div`
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  text-align: left;
+
+  h4 {
+    color: #007bff;
+    font-size: 1.4em;
+    margin-bottom: 15px;
+  }
+`;
+
+const AdicionalItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dotted #eee;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1em;
+    color: #333;
+    flex-grow: 1;
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    transform: scale(1.3);
+    margin-right: 5px;
+  }
+
+  input[type="number"] {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 1em;
+  }
+
+  span {
+    font-weight: bold;
+    color: #007bff;
+  }
+`;
+
+const AdicionalesList = styled.div`
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 0 10px;
+`;
+
 function ReservationStatusPage() {
   const navigate = useNavigate();
   const [reservationNumber, setReservationNumber] = useState("");
   const [reservation, setReservation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [userRole, setUserRole] = useState(null); // Para controlar permisos
+  const [userRole, setUserRole] = useState(null);
 
   // Modal para confirmación de cancelación
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
@@ -571,6 +634,11 @@ function ReservationStatusPage() {
   const [statusChangeError, setStatusChangeError] = useState(null);
   const [statusToChangeTo, setStatusToChangeTo] = useState(null);
 
+  // *** ESTADOS NUEVOS PARA ADICIONALES ***
+  const [availableAdicionales, setAvailableAdicionales] = useState([]);
+  const [selectedAdicionales, setSelectedAdicionales] = useState([]); // Array de { _id: adicionalId, quantity: N }
+  // *** FIN ESTADOS NUEVOS ***
+
   useEffect(() => {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
@@ -578,6 +646,18 @@ function ReservationStatusPage() {
     if (!token) {
       navigate("/login");
     }
+
+    // *** Cargar adicionales disponibles al montar el componente ***
+    const fetchAdicionales = async () => {
+      try {
+        const response = await axiosInstance.get("/adicionales/available");
+        setAvailableAdicionales(response.data);
+      } catch (err) {
+        console.error("Error al cargar adicionales:", err);
+        // Manejar el error, quizás mostrar un mensaje al usuario
+      }
+    };
+    fetchAdicionales();
   }, [navigate]);
 
   const fetchReservation = useCallback(async () => {
@@ -590,27 +670,24 @@ function ReservationStatusPage() {
     setLoading(true);
     setError(null);
     setReservation(null); // Limpiar reserva anterior
+    setSelectedAdicionales([]); // Limpiar adicionales seleccionados al buscar nueva reserva
+
     try {
-      // Nota: El backend no tiene una ruta para buscar por reservationNumber directamente.
-      // Opción 1 (ideal): Añadir una ruta en el backend: GET /api/reservations/search?number=RES-XYZ
-      // Opción 2 (menos eficiente, pero funciona si no se puede modificar el backend fácilmente):
-      // Obtener todas las reservas (si el rol lo permite) y filtrar en el frontend.
-      // Por simplicidad y eficiencia, asumiremos que se puede buscar por ID o que se añadirá una ruta de búsqueda por número.
-      // Dado que el reservationNumber es único, una búsqueda por este campo sería más apropiada.
-
-      // Asumiendo que el ID de la reserva es el mismo que el reservationNumber para esta búsqueda por simplicidad,
-      // o que se agregará un endpoint de búsqueda por reservationNumber.
-      // Idealmente, se haría una llamada GET a `/api/reservations/byNumber/${reservationNumber}`
-
-      // Por ahora, si solo tenemos getReservationById,
-      // la búsqueda por "código de reserva" necesitaría que ese código sea el _id de MongoDB.
-      // Si el código de reserva es el campo `reservationNumber` que se genera,
-      // NECESITAMOS un endpoint en el backend que busque por `reservationNumber`.
-
-      // AÑADIMOS TEMPORALMENTE: Simulamos la búsqueda por `_id` para hacer funcionar el esqueleto.
-      // DEBES IMPLEMENTAR UN ENDPOINT EN EL BACKEND PARA BUSCAR POR `reservationNumber`.
-    const response = await axiosInstance.get(`/reservations/byNumber/${reservationNumber}`); // Esto asume que el input es el _id, no el reservationNumber
+      // Usamos el endpoint '/reservations/byNumber/:reservationNumber' que se sugirió en el backend
+      const response = await axiosInstance.get(
+        `/reservations/byNumber/${reservationNumber}`
+      );
       setReservation(response.data);
+      // Opcional: Si la reserva ya tiene adicionales, pre-seleccionar en el modal
+      // Esto es útil si se quiere modificar los adicionales ya existentes
+      if (response.data.adicionales && response.data.adicionales.length > 0) {
+        setSelectedAdicionales(
+          response.data.adicionales.map((item) => ({
+            adicionalId: item.adicional._id,
+            quantity: item.quantity,
+          }))
+        );
+      }
     } catch (err) {
       console.error("Error al buscar reserva:", err);
       setError(
@@ -634,6 +711,30 @@ function ReservationStatusPage() {
     setStatusChangeError(null);
   };
 
+  // *** FUNCIÓN PARA MANEJAR LA SELECCIÓN DE ADICIONALES EN EL MODAL ***
+  const handleAdicionalSelection = (adicionalId, isChecked) => {
+    setSelectedAdicionales((prevSelected) => {
+      if (isChecked) {
+        // Añadir el adicional con cantidad 1 por defecto
+        return [...prevSelected, { adicionalId, quantity: 1 }];
+      } else {
+        // Remover el adicional
+        return prevSelected.filter((item) => item.adicionalId !== adicionalId);
+      }
+    });
+  };
+
+  const handleAdicionalQuantityChange = (adicionalId, newQuantity) => {
+    setSelectedAdicionales((prevSelected) =>
+      prevSelected.map((item) =>
+        item.adicionalId === adicionalId
+          ? { ...item, quantity: Math.max(1, newQuantity) } // Asegura cantidad mínima de 1
+          : item
+      )
+    );
+  };
+  // *** FIN FUNCIÓN PARA MANEJAR LA SELECCIÓN DE ADICIONALES EN EL MODAL ***
+
   const confirmStatusChange = useCallback(async () => {
     if (!reservation || !statusToChangeTo) return;
 
@@ -649,50 +750,39 @@ function ReservationStatusPage() {
     try {
       let updateBody = { status: statusToChangeTo };
 
-      // Lógica específica según el nuevo estado
+      // *** Lógica para ADICIONALES SOLO cuando el estado es "picked_up" ***
       if (statusToChangeTo === "picked_up") {
-        // Al recoger, el vehículo ya no está "reservado" sino "en uso"
-        // y no disponible para otros.
-        // Se asume que el backend actualiza el estado del vehículo,
-        // pero podemos reforzar aquí también si fuera necesario
-        await axiosInstance.put(
-          `/vehicles/${reservation.vehicle._id}/status`,
-          {
-            isReserved: false,
-            isAvailable: false, // Sigue no disponible porque está en uso
-          }
-        );
+        updateBody.adicionales = selectedAdicionales; // Incluir los adicionales seleccionados
+        // No necesitamos actualizar el vehículo aquí, el backend lo hará.
+        // Las líneas de axiosInstance.put(`/vehicles/...`) son redundantes si el backend maneja el estado del vehículo al cambiar el estado de la reserva.
+        // Se recomienda que el controlador de backend para 'updateReservationStatus' se encargue de la lógica del vehículo.
       } else if (statusToChangeTo === "returned") {
         // Al devolver, el vehículo vuelve a estar disponible (si no necesita mantenimiento)
         // y la reserva pasa a "completed" después de este paso.
-        await axiosInstance.put(
-          `/vehicles/${reservation.vehicle._id}/status`,
-          {
-            isReserved: false,
-            isAvailable: !reservation.vehicle.needsMaintenance, // Vuelve a disponible si no está en mantenimiento
-          }
-        );
-        updateBody.status = "completed"; // Una vez devuelto, la reserva se marca como completada
+        // Estas líneas también deberían ser manejadas por el backend en el updateReservationStatus
+        // para mantener una única fuente de verdad y evitar inconsistencias.
+        // Si el backend ya hace esto, puedes quitar las llamadas a /vehicles.
+        // updateBody.status = "completed"; // El backend ya lo hace.
       }
 
       await axiosInstance.put(
-        `/reservations/${reservation._id}/status`, // Asume que hay un endpoint para actualizar status
-        updateBody
+        `/reservations/${reservation._id}/status`, // Endpoint para actualizar status
+        updateBody // Envía el cuerpo con el nuevo estado y, si es "picked_up", los adicionales
       );
-      alert(`Reserva actualizada a estado: ${statusToChangeTo.replace('_', ' ')}`);
+      alert(`Reserva actualizada a estado: ${statusToChangeTo.replace("_", " ")}`);
       setShowStatusConfirmModal(false);
-      fetchReservation(); // Recargar la reserva para ver el nuevo estado
+      fetchReservation(); // Recargar la reserva para ver el nuevo estado y los adicionales
+      setSelectedAdicionales([]); // Limpiar selección después de confirmar
     } catch (err) {
       console.error(`Error al cambiar estado a ${statusToChangeTo}:`, err);
       setStatusChangeError(
         err.response?.data?.message ||
-          `Error al cambiar el estado a ${statusToChangeTo.replace('_', ' ')}.`
+          `Error al cambiar el estado a ${statusToChangeTo.replace("_", " ")}.`
       );
     } finally {
       setStatusChangeLoading(false);
     }
-  }, [reservation, statusToChangeTo, navigate, fetchReservation]);
-
+  }, [reservation, statusToChangeTo, navigate, fetchReservation, selectedAdicionales]); // Dependencia de selectedAdicionales
 
   const handleCancelReservation = () => {
     if (!reservation) return;
@@ -816,6 +906,33 @@ function ReservationStatusPage() {
             <p>
               <span>Costo Total:</span> ARS {reservation.totalCost.toFixed(2)}
             </p>
+            {/* *** MOSTRAR ADICIONALES YA ASOCIADOS A LA RESERVA *** */}
+            {reservation.adicionales && reservation.adicionales.length > 0 && (
+              <AdicionalesSection>
+                <h4>Adicionales de la Reserva:</h4>
+                <ReportTable>
+                  <thead>
+                    <tr>
+                      <th>Adicional</th>
+                      <th>Cantidad</th>
+                      <th>Precio Unitario</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reservation.adicionales.map((item) => (
+                      <tr key={item.adicional._id}>
+                        <td>{item.adicional.name}</td>
+                        <td>{item.quantity}</td>
+                        <td>ARS {item.itemPrice.toFixed(2)}</td>
+                        <td>ARS {(item.quantity * item.itemPrice).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </ReportTable>
+              </AdicionalesSection>
+            )}
+            {/* *** FIN MOSTRAR ADICIONALES *** */}
             <p>
               <span>Estado Actual:</span>{" "}
               <span className="status-text">
@@ -881,9 +998,6 @@ function ReservationStatusPage() {
                     Cancelar Reserva
                   </ActionButton>
                 )}
-
-                {/* Botón para Re-confirmar (si fuera necesario, ej. de pending a confirmed manualmente) */}
-                {/* Puedes añadir más botones según los flujos de negocio */}
               </ActionsContainer>
             )}
           </ReservationDetailsContainer>
@@ -935,6 +1049,62 @@ function ReservationStatusPage() {
               <strong>#{reservation?.reservationNumber}</strong> a{" "}
               **{statusToChangeTo?.replace("_", " ").toUpperCase()}**?
             </p>
+
+            {/* *** SECCIÓN DE ADICIONALES EN EL MODAL PARA "PICKED_UP" *** */}
+            {statusToChangeTo === "picked_up" && (
+              <AdicionalesSection>
+                <h4>Añadir Adicionales:</h4>
+                <AdicionalesList>
+                  {availableAdicionales.length > 0 ? (
+                    availableAdicionales.map((adicional) => {
+                      const isSelected = selectedAdicionales.some(
+                        (item) => item.adicionalId === adicional._id
+                      );
+                      const currentQuantity = isSelected
+                        ? selectedAdicionales.find(
+                            (item) => item.adicionalId === adicional._id
+                          ).quantity
+                        : 0;
+
+                      return (
+                        <AdicionalItem key={adicional._id}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) =>
+                                handleAdicionalSelection(
+                                  adicional._id,
+                                  e.target.checked
+                                )
+                              }
+                            />
+                            {adicional.name} (ARS {adicional.price.toFixed(2)})
+                          </label>
+                          {isSelected && (
+                            <input
+                              type="number"
+                              min="1"
+                              value={currentQuantity}
+                              onChange={(e) =>
+                                handleAdicionalQuantityChange(
+                                  adicional._id,
+                                  parseInt(e.target.value)
+                                )
+                              }
+                            />
+                          )}
+                        </AdicionalItem>
+                      );
+                    })
+                  ) : (
+                    <p>No hay adicionales disponibles.</p>
+                  )}
+                </AdicionalesList>
+              </AdicionalesSection>
+            )}
+            {/* *** FIN SECCIÓN DE ADICIONALES *** */}
+
             {statusChangeError && (
               <p style={{ color: "red" }}>{statusChangeError}</p>
             )}
