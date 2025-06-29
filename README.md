@@ -42,7 +42,7 @@ Sigue estos pasos para poner en marcha el backend y el frontend de Mobirent.
 
 2.  Clona el repositorio de Mobirent desde GitHub. Ve a tu repositorio en GitHub, copia la URL HTTPS (botón verde "Code") y ejecuta:
     ```
-    git clone https://github.com/FerrerThomas/mobirent.git
+    git clone https://github.com/karenkairiyama/mobirent.git
     ```
 
 3.  Navega al directorio raíz del proyecto clonado:
